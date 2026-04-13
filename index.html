@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Trading Journal</title>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -176,7 +175,6 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.success{background:var(–green);color:#08090e;box-shadow:0 4px 20px var(–green-s)}
 .toast.error{background:var(–rose);color:#fff;box-shadow:0 4px 20px var(–rose-s)}
-@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 /* Light theme */
 body.light{–bg:#f2f3f6;–bg-card:#ffffff;–bg-card-hover:#f8f9fb;–bg-input:#eef0f4;–border:#d5d8e2;–border-glow:#c0c4d4;–border-focus:#4f6ef7;–text-1:#0e1017;–text-2:#4a4e5e;–text-3:#7b809a;–cyan:#0088cc;–cyan-d:#0088cc15;–green:#00a86b;–green-d:#00a86b15;–green-s:#00a86b40;–amber:#c98600;–amber-d:#c9860012;–rose:#d42e4a;–rose-d:#d42e4a12;–rose-s:#d42e4a40;–purple:#7c5cbf;–purple-d:#7c5cbf15}
@@ -521,32 +519,20 @@ function showToast(msg, type = 'success') {
   setTimeout(() => t.className = 'toast', 2500);
 }
 
-// EmailJS init
-emailjs.init('0MHhOh6__4tYTpALY');
-
-// Sync: export backup via email
-document.getElementById('syncExport').addEventListener('click', async () => {
+// Sync: export backup — download CSV + open mail
+document.getElementById('syncExport').addEventListener('click', () => {
   if (!trades.length) { showToast('No hay datos que exportar', 'error'); return; }
-  const btn = document.getElementById('syncExport');
-  btn.style.pointerEvents = 'none';
-  btn.innerHTML = '<svg viewBox="0 0 24 24" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="9" stroke-dasharray="40" stroke-dashoffset="10"/></svg>Enviando...';
-
   const csv = 'id,date,pair,dir,result,pnl\n' + trades.map(t => `${t.id},${t.date},${t.pair},${t.dir},${t.result},${t.pnl}`).join('\n');
   const today = new Date().toISOString().slice(0, 10);
-
-  try {
-    await emailjs.send('service_6iwq84e', 'template_jgfqhuf', {
-      date: today,
-      message: csv
-    });
-    showToast('✓ Backup enviado a tu email');
-  } catch (err) {
-    console.error(err);
-    showToast('Error al enviar — revisa conexión', 'error');
-  }
-
-  btn.style.pointerEvents = '';
-  btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Enviar backup';
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'journal-backup-' + today + '.csv';
+  a.click();
+  setTimeout(() => {
+    window.location.href = 'mailto:d.santana.pecellin@gmail.com?subject=Trading Journal Backup ' + today + '&body=Adjunta el archivo journal-backup-' + today + '.csv que se acaba de descargar.';
+  }, 500);
+  showToast('✓ CSV descargado — adjúntalo al email');
 });
 
 // Sync: import backup CSV
