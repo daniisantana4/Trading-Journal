@@ -66,10 +66,56 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .sec::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
 
 /* Filter tabs */
-.filters{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
 .filter-btn{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.5px;padding:7px 16px;border-radius:100px;border:1.5px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer;transition:all .3s;-webkit-tap-highlight-color:transparent}
 .filter-btn:hover{border-color:var(--border-glow);color:var(--text-2)}
 .filter-btn.active{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-d)}
+
+/* Advanced filters row */
+.filters-adv{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.filter-select,.filter-date{background:var(--bg-card);border:1.5px solid var(--border);border-radius:10px;padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-1);outline:none;transition:all .25s;-webkit-appearance:none;cursor:pointer}
+.filter-select{padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23838aad' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.filter-select option{background:var(--bg-card);color:var(--text-1)}
+.filter-date{width:130px}
+.filter-select:focus,.filter-date:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px #00e5ff10}
+.filter-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1px}
+.filter-reset{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);background:none;border:1px solid var(--border);padding:7px 12px;border-radius:10px;cursor:pointer;transition:all .25s}
+.filter-reset:hover{color:var(--text-2);border-color:var(--border-glow)}
+
+/* Calendar heatmap */
+.cal-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px;overflow-x:auto}
+.cal-title{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
+.cal-grid{display:flex;gap:3px}
+.cal-week{display:flex;flex-direction:column;gap:3px}
+.cal-day{width:14px;height:14px;border-radius:3px;position:relative;cursor:default;transition:transform .2s}
+.cal-day:hover{transform:scale(1.4);z-index:2}
+.cal-day.empty{background:transparent;cursor:default}
+.cal-day.empty:hover{transform:none}
+.cal-day.neutral{background:var(--border)}
+.cal-day.g1{background:#00ffaa30}
+.cal-day.g2{background:#00ffaa55}
+.cal-day.g3{background:#00ffaa88}
+.cal-day.g4{background:#00ffaacc}
+.cal-day.r1{background:#ff3d7130}
+.cal-day.r2{background:#ff3d7155}
+.cal-day.r3{background:#ff3d7188}
+.cal-day.r4{background:#ff3d71cc}
+.cal-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-1);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.cal-day:hover .cal-tooltip{opacity:1}
+.cal-months{display:flex;gap:0;margin-bottom:6px;padding-left:0}
+.cal-month-label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px}
+.cal-legend{display:flex;align-items:center;gap:4px;margin-top:10px;justify-content:flex-end}
+.cal-legend-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-3)}
+.cal-legend-box{width:12px;height:12px;border-radius:2px}
+body.light .cal-day.g1{background:#00a86b30}
+body.light .cal-day.g2{background:#00a86b55}
+body.light .cal-day.g3{background:#00a86b88}
+body.light .cal-day.g4{background:#00a86bcc}
+body.light .cal-day.r1{background:#d42e4a30}
+body.light .cal-day.r2{background:#d42e4a55}
+body.light .cal-day.r3{background:#d42e4a88}
+body.light .cal-day.r4{background:#d42e4acc}
+body.light .cal-day.neutral{background:#d5d8e2}
 
 /* Stat cards grid */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:8px}
@@ -290,12 +336,24 @@ body.light .form-field select{background-image:url("data:image/svg+xml,%3Csvg xm
     <button class="filter-btn" data-f="90">3 meses</button>
     <button class="filter-btn" data-f="0">Todo</button>
   </div>
+  <div class="filters-adv anim a2">
+    <span class="filter-label">Par</span>
+    <select class="filter-select" id="filterPair"><option value="">Todos</option></select>
+    <span class="filter-label">Desde</span>
+    <input type="date" class="filter-date" id="filterFrom">
+    <span class="filter-label">Hasta</span>
+    <input type="date" class="filter-date" id="filterTo">
+    <button class="filter-reset" id="filterReset">✕ Reset</button>
+  </div>
 
   <div class="stats-grid anim a3" id="statsMain"></div>
   <button class="collapse-toggle anim a3" id="statsToggle">Más estadísticas <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
   <div class="collapse-body" id="statsCollapse">
     <div class="stats-grid" id="statsExtra" style="margin-top:10px"></div>
   </div>
+
+  <div class="sec anim a4">Calendario PnL</div>
+  <div class="cal-wrap anim a4" id="calWrap"></div>
 
   <div class="sec anim a4">Curva de equity</div>
   <div class="chart-wrap anim a4" id="chartWrap"></div>
@@ -344,6 +402,9 @@ function saveTrades(t) { localStorage.setItem(STORAGE_KEY, JSON.stringify(t)); }
 
 let trades = loadTrades();
 let filter = 7;
+let filterPair = '';
+let filterFrom = '';
+let filterTo = '';
 let formDir = 'long';
 let formRes = 'win';
 
@@ -388,22 +449,68 @@ document.getElementById('submitBtn').addEventListener('click', () => {
   render();
 });
 
-// Filters
+// Filters — quick presets
 document.querySelectorAll('.filter-btn').forEach(b => {
   b.addEventListener('click', () => {
     filter = parseInt(b.dataset.f);
     document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
+    // Clear date range when using presets
+    filterFrom = ''; filterTo = '';
+    document.getElementById('filterFrom').value = '';
+    document.getElementById('filterTo').value = '';
     render();
   });
 });
 
+// Filters — pair dropdown
+const filterPairEl = document.getElementById('filterPair');
+filterPairEl.addEventListener('change', () => { filterPair = filterPairEl.value; render(); });
+
+// Filters — date range
+document.getElementById('filterFrom').addEventListener('change', e => {
+  filterFrom = e.target.value;
+  if (filterFrom) { document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active')); filter = -1; }
+  render();
+});
+document.getElementById('filterTo').addEventListener('change', e => {
+  filterTo = e.target.value;
+  if (filterTo) { document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active')); filter = -1; }
+  render();
+});
+
+// Reset filters
+document.getElementById('filterReset').addEventListener('click', () => {
+  filter = 0; filterPair = ''; filterFrom = ''; filterTo = '';
+  filterPairEl.value = '';
+  document.getElementById('filterFrom').value = '';
+  document.getElementById('filterTo').value = '';
+  document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
+  document.querySelector('[data-f="0"]').classList.add('active');
+  render();
+});
+
+function updatePairDropdown() {
+  const pairs = [...new Set(trades.map(t => t.pair))].sort();
+  const current = filterPairEl.value;
+  filterPairEl.innerHTML = '<option value="">Todos</option>' + pairs.map(p => `<option value="${p}" ${p === current ? 'selected' : ''}>${p}</option>`).join('');
+}
+
 function filtered() {
-  if (filter === 0) return [...trades];
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - filter);
-  const cs = cutoff.toISOString().slice(0, 10);
-  return trades.filter(t => t.date >= cs);
+  let f = [...trades];
+  // Time filter (presets)
+  if (filter > 0) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - filter);
+    const cs = cutoff.toISOString().slice(0, 10);
+    f = f.filter(t => t.date >= cs);
+  }
+  // Date range
+  if (filterFrom) f = f.filter(t => t.date >= filterFrom);
+  if (filterTo) f = f.filter(t => t.date <= filterTo);
+  // Pair
+  if (filterPair) f = f.filter(t => t.pair === filterPair);
+  return f;
 }
 
 function fmt(n) {
@@ -609,8 +716,88 @@ function renderTrades() {
   });
 }
 
+function renderCalendar() {
+  const wrap = document.getElementById('calWrap');
+  // Use all trades for calendar (ignoring filters to show full picture)
+  const allTrades = [...trades];
+  if (allTrades.length === 0) { wrap.innerHTML = '<div class="cal-title">Calendario PnL</div><div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px">No hay datos</div>'; return; }
+
+  // Build daily PnL map
+  const dayMap = {};
+  allTrades.forEach(t => { dayMap[t.date] = (dayMap[t.date] || 0) + t.pnl; });
+
+  // 90 days grid
+  const today = new Date();
+  const days = [];
+  for (let i = 89; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    days.push({ date: key, dow: d.getDay(), pnl: dayMap[key] || null, month: d.getMonth(), day: d.getDate() });
+  }
+
+  // Intensity thresholds
+  const vals = Object.values(dayMap).map(Math.abs).filter(v => v > 0);
+  const maxAbs = vals.length ? Math.max(...vals) : 1;
+  function getCls(pnl) {
+    if (pnl === null) return 'neutral';
+    if (pnl === 0) return 'neutral';
+    const intensity = Math.min(Math.abs(pnl) / maxAbs, 1);
+    const level = intensity < 0.25 ? 1 : intensity < 0.5 ? 2 : intensity < 0.75 ? 3 : 4;
+    return (pnl > 0 ? 'g' : 'r') + level;
+  }
+
+  // Build weeks
+  const weeks = [];
+  let currentWeek = [];
+  // Pad first week
+  if (days.length > 0) {
+    const firstDow = days[0].dow === 0 ? 6 : days[0].dow - 1; // Mon=0
+    for (let i = 0; i < firstDow; i++) currentWeek.push(null);
+  }
+  days.forEach(d => {
+    const dow = d.dow === 0 ? 6 : d.dow - 1;
+    currentWeek.push(d);
+    if (dow === 6) { weeks.push(currentWeek); currentWeek = []; }
+  });
+  if (currentWeek.length) weeks.push(currentWeek);
+
+  // Month labels
+  const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  let lastMonth = -1;
+  const monthLabels = weeks.map(w => {
+    const firstDay = w.find(d => d);
+    if (firstDay && firstDay.month !== lastMonth) { lastMonth = firstDay.month; return monthNames[firstDay.month]; }
+    return '';
+  });
+
+  const weeksHtml = weeks.map((w, wi) => {
+    const daysHtml = w.map(d => {
+      if (!d) return '<div class="cal-day empty"></div>';
+      const cls = getCls(d.pnl);
+      const tooltip = d.pnl !== null ? `<div class="cal-tooltip">${d.date}<br>${fmt(d.pnl)}$</div>` : `<div class="cal-tooltip">${d.date}<br>Sin trades</div>`;
+      return `<div class="cal-day ${cls}">${tooltip}</div>`;
+    }).join('');
+    return `<div class="cal-week">${wi === 0 || monthLabels[wi] ? `<div style="height:14px;margin-bottom:2px"><span class="cal-month-label">${monthLabels[wi]}</span></div>` : '<div style="height:14px;margin-bottom:2px"></div>'}${daysHtml}</div>`;
+  }).join('');
+
+  wrap.innerHTML = `<div class="cal-title">Calendario PnL — Últimos 90 días</div>
+    <div class="cal-grid">${weeksHtml}</div>
+    <div class="cal-legend">
+      <span class="cal-legend-label">Pérdida</span>
+      <div class="cal-legend-box" style="background:var(--rose)"></div>
+      <div class="cal-legend-box" style="background:#ff3d7155"></div>
+      <div class="cal-legend-box" style="background:var(--border)"></div>
+      <div class="cal-legend-box" style="background:#00ffaa55"></div>
+      <div class="cal-legend-box" style="background:var(--green)"></div>
+      <span class="cal-legend-label">Ganancia</span>
+    </div>`;
+}
+
 function render() {
+  updatePairDropdown();
   renderStats();
+  renderCalendar();
   renderChart();
   renderDist();
   renderPairs();
