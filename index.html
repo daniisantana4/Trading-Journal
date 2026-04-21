@@ -154,6 +154,17 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .cal-legend-box{width:12px;height:12px;border-radius:2px}
 
 /* Form */
+/* Paste import */
+.paste-card{background:var(--bg-card);border:1.5px dashed var(--border);border-radius:14px;padding:16px;margin-bottom:12px;transition:all .3s}
+.paste-card:focus-within{border-color:var(--cyan);border-style:solid;box-shadow:0 0 0 3px #00e5ff10}
+.paste-label{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.paste-label svg{width:14px;height:14px;stroke:var(--cyan);stroke-width:2;fill:none;stroke-linecap:round}
+.paste-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-1);outline:none;transition:all .25s;resize:none;min-height:42px;line-height:1.5}
+.paste-input::placeholder{color:var(--text-3)}
+.paste-input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px #00e5ff10}
+.paste-hint{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-3);margin-top:6px;letter-spacing:.5px}
+.paste-ok{color:var(--green)}.paste-err{color:var(--rose)}
+
 .form-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:20px;transition:border-color .3s}
 .form-card:hover{border-color:var(--border-glow)}
 .form-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
@@ -288,38 +299,29 @@ body.light .cal-day.neutral{background:#d5d8e2}
   </div>
 
   <!-- ══════ FORM ══════ -->
-<div class="sec anim a1">Registrar operación</div>
+  <div class="sec anim a1">Importar desde Telegram</div>
+  <div class="paste-card anim a1">
+    <div class="paste-label"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>Pegar cadena del bot</div>
+    <textarea class="paste-input" id="pasteInput" rows="2" placeholder="(BTC/USDT | SHORT 20x | LOSS | 76,042.10 | ...)"></textarea>
+    <div class="paste-hint" id="pasteHint">Pega la cadena de Telegram y se importará automáticamente</div>
+  </div>
+
+  <div class="sec anim a1">Registrar manualmente</div>
   <div class="form-card anim a1" id="formCard">
-    
-    <div class="form-row" style="align-items: center; gap: 8px;">
-      <div class="form-field" style="flex: 1;">
-        <label>Importar desde Bot</label>
-        <input type="text" id="fImport" placeholder="(BTC/USDT | SHORT 20x | LOSS | ... )" autocomplete="off">
-      </div>
-      <button class="export-btn primary" id="btnImport" style="margin-top: 14px;">Importar</button>
-    </div>
-    
-    <div class="form-divider"><span class="form-divider-label">Datos extraídos</span></div>
     <div class="form-row">
       <div class="form-field half"><label>Fecha</label><input type="date" id="fDate"></div>
       <div class="form-field half"><label>Criptomoneda</label><input type="text" id="fPair" placeholder="BTC, ETH, SOL..." autocomplete="off"></div>
     </div>
     <div class="form-row">
       <div class="form-field half"><label>Dirección</label>
-        <div class="dir-pills">
-          <button class="dir-pill sel-long" id="dirLong" data-dir="long">↑ Long</button>
-          <button class="dir-pill" id="dirShort" data-dir="short">↓ Short</button>
-        </div>
+        <div class="dir-pills"><button class="dir-pill sel-long" id="dirLong" data-dir="long">↑ Long</button><button class="dir-pill" id="dirShort" data-dir="short">↓ Short</button></div>
       </div>
       <div class="form-field half"><label>Resultado</label>
-        <div class="res-pills">
-          <button class="res-pill sel-win" id="resWin" data-res="win">✓ Éxito</button>
-          <button class="res-pill" id="resLoss" data-res="loss">✗ Pérdida</button>
-        </div>
+        <div class="res-pills"><button class="res-pill sel-win" id="resWin" data-res="win">✓ Éxito</button><button class="res-pill" id="resLoss" data-res="loss">✗ Pérdida</button></div>
       </div>
     </div>
     <div class="form-row">
-      <div class="form-field half"><label>PnL neto (USD)</label><input type="number" inputmode="decimal" id="fPnl" placeholder="0.00" step="0.01"></div>
+      <div class="form-field half"><label>PnL (USD)</label><input type="number" inputmode="decimal" id="fPnl" placeholder="0.00" step="0.01"></div>
       <div class="form-field half"><label>Apalancamiento</label><input type="number" inputmode="numeric" id="fLev" placeholder="10" step="1" class="sm"></div>
     </div>
 
@@ -425,6 +427,101 @@ let formDir='long',formRes='win';
 
 const $=id=>document.getElementById(id);
 $('fDate').value=new Date().toISOString().slice(0,10);
+
+/* ── Paste import from Telegram ───────────────────────────── */
+const pasteInput=$('pasteInput');
+const pasteHint=$('pasteHint');
+
+pasteInput.addEventListener('input',()=>{
+  const raw=pasteInput.value.trim();
+  if(!raw){pasteHint.textContent='Pega la cadena de Telegram y se importará automáticamente';pasteHint.className='paste-hint';return;}
+
+  const parsed=parseTelegramString(raw);
+  if(!parsed){pasteHint.textContent='✗ Formato no reconocido';pasteHint.className='paste-hint paste-err';return;}
+
+  // Import the trade
+  trades.push(parsed);
+  trades.sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+  save(trades);
+  render();
+
+  pasteHint.textContent='✓ Operación importada: '+parsed.pair+' '+parsed.dir.toUpperCase()+' '+fmt(parsed.pnl)+'$';
+  pasteHint.className='paste-hint paste-ok';
+  pasteInput.value='';
+  setTimeout(()=>{pasteHint.textContent='Pega la cadena de Telegram y se importará automáticamente';pasteHint.className='paste-hint';},3000);
+});
+
+function parseTelegramString(raw){
+  try{
+    // Strip outer parentheses and trim
+    let s=raw.trim();
+    if(s.startsWith('('))s=s.slice(1);
+    if(s.endsWith(')'))s=s.slice(0,-1);
+    s=s.trim();
+
+    const parts=s.split('|').map(p=>p.trim());
+    if(parts.length<12)return null;
+
+    // [0] "BTC/USDT"
+    const pairFull=parts[0];
+    const pair=pairFull.includes('/')?pairFull.split('/')[0]:pairFull.replace(/USDT|USDC|USD/i,'');
+
+    // [1] "SHORT 20x"
+    const dirParts=parts[1].split(/\s+/);
+    const dir=dirParts[0].toLowerCase()==='long'?'long':'short';
+    const leverage=parseInt((dirParts[1]||'').replace('x',''))||0;
+
+    // [2] "WIN" / "LOSS" / "BE"
+    const resRaw=parts[2].toUpperCase();
+    const result=resRaw==='WIN'?'win':resRaw==='LOSS'?'loss':'win';
+
+    // [3] entry "76,042.10"
+    const entry=parseNumFromStr(parts[3]);
+
+    // [4] close "76,012.40"
+    const close=parseNumFromStr(parts[4]);
+
+    // [5] qty "0.0002"
+    const qty=parseNumFromStr(parts[5]);
+
+    // [6] margin "0.7700 USDT"
+    const margin=parseNumFromStr(parts[6]);
+
+    // [7] pnl "-0.0017 USDT (-0.22%)"
+    const pnlMatch=parts[7].match(/^([+-]?[\d,.]+)/);
+    const pnl=pnlMatch?parseNumFromStr(pnlMatch[1]):0;
+
+    // [8] fee "0.0076 USDT"
+    const fee=parseNumFromStr(parts[8]);
+
+    // [9] funding "0.0000 USDT"
+    const funding=parseNumFromStr(parts[9]);
+
+    // [10] bonus "0.0019 USDT"
+    const bonus=parseNumFromStr(parts[10]);
+
+    // [11] duration "0h 1m"
+    const duration=parts[11].replace(/USDT/gi,'').trim();
+
+    // Use today as date
+    const date=new Date().toISOString().slice(0,10);
+
+    return {
+      id:Date.now(), date, pair:pair.toUpperCase(), dir, result, pnl,
+      entry, close, leverage, qty, margin, fee, funding, bonus, duration,
+    };
+  }catch(e){
+    console.error('Parse error:',e);
+    return null;
+  }
+}
+
+function parseNumFromStr(s){
+  if(!s)return 0;
+  // Remove USDT, %, commas used as thousands separator
+  const clean=s.replace(/USDT|%/gi,'').trim().replace(/,/g,'');
+  return parseFloat(clean)||0;
+}
 
 /* ── Direction / Result pills ─────────────────────────────── */
 document.querySelectorAll('.dir-pill').forEach(b=>b.addEventListener('click',()=>{
@@ -823,82 +920,6 @@ const themeTrack=$('themeTrack');
 function applyTheme(light){document.body.classList.toggle('light',light);themeTrack.classList.toggle('on',light);localStorage.setItem('theme',light?'light':'dark');}
 $('themeToggle').addEventListener('click',()=>applyTheme(!document.body.classList.contains('light')));
 if(localStorage.getItem('theme')==='light')applyTheme(true);
-
-document.getElementById('btnImport').addEventListener('click', function() {
-    const rawData = document.getElementById('fImport').value.trim();
-    if (!rawData) return;
-
-    try {
-        // 1. Limpiar los paréntesis del inicio y final
-        const cleanData = rawData.replace(/^\(|\)$/g, '').trim();
-        
-        // 2. Separar los elementos por el delimitador "|"
-        const parts = cleanData.split('|').map(p => p.trim());
-        
-        if (parts.length < 12) {
-            alert('Formato de bot incorrecto. Verifica la cadena.');
-            return;
-        }
-
-        // Función auxiliar para extraer solo el número limpiando comas y letras
-        const parseNumber = (str) => {
-            return str.replace(/,/g, '')       // Quita comas de miles
-                      .split(' ')[0]           // Quita "USDT" o "(%)" si hay un espacio
-                      .trim();
-        };
-
-        // FECHA: Pone la fecha de hoy por defecto
-        document.getElementById('fDate').valueAsDate = new Date();
-
-        // CRIPTO (Ej: BTC/USDT -> BTC)
-        document.getElementById('fPair').value = parts[0].split('/')[0];
-
-        // DIRECCIÓN Y LEVERAGE (Ej: SHORT 20x)
-        const dirData = parts[1].split(' ');
-        const dir = dirData[0].toUpperCase();
-        document.getElementById('fLev').value = dirData[1] ? dirData[1].replace(/x/i, '') : '';
-        
-        // Lógica de botones visuales (Pills)
-        document.querySelectorAll('.dir-pill').forEach(btn => btn.classList.remove('sel-long', 'sel-short'));
-        if (dir === 'LONG') {
-            document.getElementById('dirLong').classList.add('sel-long');
-        } else {
-            document.getElementById('dirShort').classList.add('sel-short');
-        }
-
-        // RESULTADO (Ej: LOSS)
-        const res = parts[2].toUpperCase();
-        document.querySelectorAll('.res-pill').forEach(btn => btn.classList.remove('sel-win', 'sel-loss'));
-        if (res === 'WIN') {
-            document.getElementById('resWin').classList.add('sel-win');
-        } else {
-            document.getElementById('resLoss').classList.add('sel-loss');
-        }
-
-        // PRECIOS Y NÚMEROS
-        document.getElementById('fEntry').value = parseNumber(parts[3]);
-        document.getElementById('fClose').value = parseNumber(parts[4]);
-        document.getElementById('fQty').value = parseNumber(parts[5]);
-        document.getElementById('fMargin').value = parseNumber(parts[6]);
-        
-        // PnL NETO (Ej: -0.0017 USDT (-0.22%) -> -0.0017)
-        document.getElementById('fPnl').value = parseNumber(parts[7]);
-        
-        document.getElementById('fFee').value = parseNumber(parts[8]);
-        document.getElementById('fFunding').value = parseNumber(parts[9]);
-        document.getElementById('fBonus').value = parseNumber(parts[10]);
-
-        // DURACIÓN (Ej: 0h 1m)
-        document.getElementById('fDuration').value = parts[11];
-
-        // Limpiar el input de importación tras rellenar con éxito
-        document.getElementById('fImport').value = '';
-        
-    } catch (e) {
-        console.error("Error procesando cadena: ", e);
-        alert('Hubo un error al leer los datos. Revisa el formato.');
-    }
-});
 </script>
 </body>
 </html>
