@@ -159,7 +159,7 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .paste-card:focus-within{border-color:var(--cyan);border-style:solid;box-shadow:0 0 0 3px #00e5ff10}
 .paste-label{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .paste-label svg{width:14px;height:14px;stroke:var(--cyan);stroke-width:2;fill:none;stroke-linecap:round}
-.paste-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-1);outline:none;transition:all .25s;resize:none;min-height:42px;line-height:1.5}
+.paste-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-1);outline:none;transition:all .25s}
 .paste-input::placeholder{color:var(--text-3)}
 .paste-input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px #00e5ff10}
 .paste-hint{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-3);margin-top:6px;letter-spacing:.5px}
@@ -215,6 +215,10 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .td-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1px}
 .td-val{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text-2)}
 .td-val.green{color:var(--green)}.td-val.rose{color:var(--rose)}.td-val.amber{color:var(--amber)}
+
+/* Trade detail edit button */
+.td-edit-btn{grid-column:1/-1;margin-top:4px;padding:8px;border:1.5px solid var(--border);border-radius:8px;background:transparent;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--cyan);cursor:pointer;transition:all .25s;-webkit-tap-highlight-color:transparent}
+.td-edit-btn:hover{background:var(--cyan-d);border-color:var(--cyan)}
 
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-3);font-size:13px}
 .empty-state .empty-icon{font-size:40px;margin-bottom:12px;opacity:.5}
@@ -302,11 +306,12 @@ body.light .cal-day.neutral{background:#d5d8e2}
   <div class="sec anim a1">Importar desde Telegram</div>
   <div class="paste-card anim a1">
     <div class="paste-label"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>Pegar cadena del bot</div>
-    <textarea class="paste-input" id="pasteInput" rows="2" placeholder="(BTC/USDT | SHORT 20x | LOSS | 76,042.10 | ...)"></textarea>
-    <div class="paste-hint" id="pasteHint">Pega la cadena de Telegram y se importará automáticamente</div>
+    <input type="text" class="paste-input" id="pasteInput" placeholder="(BTC/USDT | SHORT 20x | LOSS | 76,042.10 | ...)">
+    <div class="paste-hint" id="pasteHint">Pega la cadena de Telegram</div>
   </div>
 
-  <div class="sec anim a1">Registrar manualmente</div>
+  <button class="collapse-toggle anim a1" id="formToggle" style="margin-top:0;margin-bottom:8px">Registrar manualmente <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+  <div class="collapse-body" id="formCollapse">
   <div class="form-card anim a1" id="formCard">
     <div class="form-row">
       <div class="form-field half"><label>Fecha</label><input type="date" id="fDate"></div>
@@ -346,6 +351,7 @@ body.light .cal-day.neutral{background:#d5d8e2}
 
     <button class="submit-btn" id="submitBtn">Registrar operación</button>
   </div>
+  </div><!-- /formCollapse -->
 
   <!-- ══════ STATS ══════ -->
   <div class="sec anim a2">Resumen</div>
@@ -432,23 +438,31 @@ $('fDate').value=new Date().toISOString().slice(0,10);
 const pasteInput=$('pasteInput');
 const pasteHint=$('pasteHint');
 
-pasteInput.addEventListener('input',()=>{
-  const raw=pasteInput.value.trim();
-  if(!raw){pasteHint.textContent='Pega la cadena de Telegram y se importará automáticamente';pasteHint.className='paste-hint';return;}
+pasteInput.addEventListener('paste',e=>{
+  // Let the paste complete, then read value
+  setTimeout(()=>{
+    const raw=pasteInput.value.trim();
+    if(!raw){return;}
 
-  const parsed=parseTelegramString(raw);
-  if(!parsed){pasteHint.textContent='✗ Formato no reconocido';pasteHint.className='paste-hint paste-err';return;}
+    const parsed=parseTelegramString(raw);
+    if(!parsed){pasteHint.textContent='✗ Formato no reconocido';pasteHint.className='paste-hint paste-err';pasteInput.value='';return;}
 
-  // Import the trade
-  trades.push(parsed);
-  trades.sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
-  save(trades);
-  render();
+    // Duplicate check (same date + pair + dir + pnl)
+    const key=parsed.date+parsed.pair+parsed.dir+parsed.pnl;
+    const isDupe=trades.some(t=>(t.date+t.pair+t.dir+t.pnl)===key);
+    if(isDupe){pasteHint.textContent='✗ Operación ya registrada (duplicado)';pasteHint.className='paste-hint paste-err';pasteInput.value='';setTimeout(()=>{pasteHint.textContent='Pega la cadena de Telegram';pasteHint.className='paste-hint';},3000);return;}
 
-  pasteHint.textContent='✓ Operación importada: '+parsed.pair+' '+parsed.dir.toUpperCase()+' '+fmt(parsed.pnl)+'$';
-  pasteHint.className='paste-hint paste-ok';
-  pasteInput.value='';
-  setTimeout(()=>{pasteHint.textContent='Pega la cadena de Telegram y se importará automáticamente';pasteHint.className='paste-hint';},3000);
+    // Import the trade
+    trades.push(parsed);
+    trades.sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+    save(trades);
+    render();
+
+    pasteHint.textContent='✓ Importada: '+parsed.pair+' '+parsed.dir.toUpperCase()+' '+fmt(parsed.pnl)+'$';
+    pasteHint.className='paste-hint paste-ok';
+    pasteInput.value='';
+    setTimeout(()=>{pasteHint.textContent='Pega la cadena de Telegram';pasteHint.className='paste-hint';},3000);
+  },50);
 });
 
 function parseTelegramString(raw){
@@ -657,8 +671,8 @@ function renderStats(){
     {label:'Mejor trade',val:fmt(best)+'$',cls:'green'},
     {label:'Peor trade',val:fmt(worst)+'$',cls:'rose'},
     {label:'Max drawdown',val:fmt(-maxDD)+'$',cls:'rose'},
-    {label:'Total comisiones',val:fmt(totalFee)+'$',cls:totalFee<=0?'rose':'amber'},
-    {label:'Total funding',val:fmt(totalFunding)+'$',cls:totalFunding<=0?'rose':'amber'},
+    {label:'Total comisiones',val:fmt(totalFee)+'$',cls:totalFee<0?'rose':totalFee>0?'amber':''},
+    {label:'Total funding',val:fmt(totalFunding)+'$',cls:totalFunding<0?'rose':totalFunding>0?'amber':''},
     {label:'Bono consumido',val:fmt(-Math.abs(totalBonus))+'$',cls:'amber'},
     {label:'Avg leverage',val:avgLev+'x',cls:''},
     {label:'Mejor racha',val:maxWS+' ✓',cls:'green'},
@@ -754,13 +768,16 @@ function renderTrades(){
       ${hasDetail?`<div class="trade-detail" data-detail="${t.id}"><div class="trade-detail-inner">
         ${t.entry?df('Entry',fmtP(t.entry)):''}
         ${t.close?df('Close',fmtP(t.close)):''}
-        ${t.qty?df('Cantidad',t.qty):''}
+        ${t.qty?df('Cantidad',fmtP(t.qty)):''}
         ${t.margin?df('Margen',fmt(t.margin)+'$'):''}
         ${t.fee?df('Comisiones',fmt(t.fee)+'$','rose'):''}
         ${t.funding?df('Funding',fmt(t.funding)+'$','rose'):''}
         ${t.bonus?df('Bono',fmt(-Math.abs(t.bonus))+'$','amber'):''}
         ${t.margin?df('PnL %',(t.pnl/t.margin*100).toFixed(2)+'%',t.pnl>=0?'green':'rose'):''}
-      </div></div>`:''}
+        <button class="td-edit-btn" data-edit="${t.id}">✎ Editar</button>
+      </div></div>`:`<div class="trade-detail" data-detail="${t.id}"><div class="trade-detail-inner">
+        <button class="td-edit-btn" data-edit="${t.id}">✎ Editar</button>
+      </div></div>`}
     </div>`;
   }).join('');
 
@@ -779,6 +796,43 @@ function renderTrades(){
       e.stopPropagation();
       const id=parseInt(btn.closest('.trade-item').dataset.id);
       trades=trades.filter(t=>t.id!==id);save(trades);render();
+    });
+  });
+  // Edit handlers
+  list.querySelectorAll('.td-edit-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const id=parseInt(btn.dataset.edit);
+      const t=trades.find(x=>x.id===id);
+      if(!t)return;
+      // Fill form
+      $('fDate').value=t.date;
+      $('fPair').value=t.pair;
+      $('fPnl').value=Math.abs(t.pnl);
+      $('fLev').value=t.leverage||'';
+      $('fEntry').value=t.entry||'';
+      $('fClose').value=t.close||'';
+      $('fQty').value=t.qty||'';
+      $('fMargin').value=t.margin||'';
+      $('fFee').value=t.fee||'';
+      $('fFunding').value=t.funding||'';
+      $('fBonus').value=t.bonus||'';
+      $('fDuration').value=t.duration||'';
+      // Set dir + result pills
+      formDir=t.dir;
+      $('dirLong').className='dir-pill'+(formDir==='long'?' sel-long':'');
+      $('dirShort').className='dir-pill'+(formDir==='short'?' sel-short':'');
+      formRes=t.result;
+      $('resWin').className='res-pill'+(formRes==='win'?' sel-win':'');
+      $('resLoss').className='res-pill'+(formRes==='loss'?' sel-loss':'');
+      // Open form collapsible
+      const fc=$('formCollapse'),ft=$('formToggle');
+      if(!fc.classList.contains('open')){fc.classList.add('open');ft.classList.add('open');ft.innerHTML='Ocultar formulario <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>';}
+      // Remove old trade
+      trades=trades.filter(x=>x.id!==id);save(trades);render();
+      // Scroll to form
+      $('formCard').scrollIntoView({behavior:'smooth',block:'center'});
+      toast('Editando — modifica y pulsa Registrar','success');
     });
   });
 }
@@ -821,6 +875,7 @@ function setupToggle(bId,bdId,lOpen,lClosed){
 setupToggle('statsToggle','statsCollapse','Menos estadísticas','Más estadísticas');
 setupToggle('pairsToggle','pairsCollapse','Ocultar tabla','Ver tabla de pares');
 setupToggle('tradesToggle','tradesCollapse','Ocultar operaciones','Mostrar operaciones');
+setupToggle('formToggle','formCollapse','Ocultar formulario','Registrar manualmente');
 
 /* ── Toast ────────────────────────────────────────────────── */
 function toast(msg,type='success'){const t=$('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.className='toast',2500);}
