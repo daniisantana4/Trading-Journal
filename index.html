@@ -288,18 +288,34 @@ body.light .cal-day.neutral{background:#d5d8e2}
   </div>
 
   <!-- ══════ FORM ══════ -->
-  <div class="sec anim a1">Registrar operación</div>
+<div class="sec anim a1">Registrar operación</div>
   <div class="form-card anim a1" id="formCard">
+    
+    <div class="form-row" style="align-items: center; gap: 8px;">
+      <div class="form-field" style="flex: 1;">
+        <label>Importar desde Bot</label>
+        <input type="text" id="fImport" placeholder="(BTC/USDT | SHORT 20x | LOSS | ... )" autocomplete="off">
+      </div>
+      <button class="export-btn primary" id="btnImport" style="margin-top: 14px;">Importar</button>
+    </div>
+    
+    <div class="form-divider"><span class="form-divider-label">Datos extraídos</span></div>
     <div class="form-row">
       <div class="form-field half"><label>Fecha</label><input type="date" id="fDate"></div>
       <div class="form-field half"><label>Criptomoneda</label><input type="text" id="fPair" placeholder="BTC, ETH, SOL..." autocomplete="off"></div>
     </div>
     <div class="form-row">
       <div class="form-field half"><label>Dirección</label>
-        <div class="dir-pills"><button class="dir-pill sel-long" id="dirLong" data-dir="long">↑ Long</button><button class="dir-pill" id="dirShort" data-dir="short">↓ Short</button></div>
+        <div class="dir-pills">
+          <button class="dir-pill sel-long" id="dirLong" data-dir="long">↑ Long</button>
+          <button class="dir-pill" id="dirShort" data-dir="short">↓ Short</button>
+        </div>
       </div>
       <div class="form-field half"><label>Resultado</label>
-        <div class="res-pills"><button class="res-pill sel-win" id="resWin" data-res="win">✓ Éxito</button><button class="res-pill" id="resLoss" data-res="loss">✗ Pérdida</button></div>
+        <div class="res-pills">
+          <button class="res-pill sel-win" id="resWin" data-res="win">✓ Éxito</button>
+          <button class="res-pill" id="resLoss" data-res="loss">✗ Pérdida</button>
+        </div>
       </div>
     </div>
     <div class="form-row">
@@ -807,6 +823,82 @@ const themeTrack=$('themeTrack');
 function applyTheme(light){document.body.classList.toggle('light',light);themeTrack.classList.toggle('on',light);localStorage.setItem('theme',light?'light':'dark');}
 $('themeToggle').addEventListener('click',()=>applyTheme(!document.body.classList.contains('light')));
 if(localStorage.getItem('theme')==='light')applyTheme(true);
+
+document.getElementById('btnImport').addEventListener('click', function() {
+    const rawData = document.getElementById('fImport').value.trim();
+    if (!rawData) return;
+
+    try {
+        // 1. Limpiar los paréntesis del inicio y final
+        const cleanData = rawData.replace(/^\(|\)$/g, '').trim();
+        
+        // 2. Separar los elementos por el delimitador "|"
+        const parts = cleanData.split('|').map(p => p.trim());
+        
+        if (parts.length < 12) {
+            alert('Formato de bot incorrecto. Verifica la cadena.');
+            return;
+        }
+
+        // Función auxiliar para extraer solo el número limpiando comas y letras
+        const parseNumber = (str) => {
+            return str.replace(/,/g, '')       // Quita comas de miles
+                      .split(' ')[0]           // Quita "USDT" o "(%)" si hay un espacio
+                      .trim();
+        };
+
+        // FECHA: Pone la fecha de hoy por defecto
+        document.getElementById('fDate').valueAsDate = new Date();
+
+        // CRIPTO (Ej: BTC/USDT -> BTC)
+        document.getElementById('fPair').value = parts[0].split('/')[0];
+
+        // DIRECCIÓN Y LEVERAGE (Ej: SHORT 20x)
+        const dirData = parts[1].split(' ');
+        const dir = dirData[0].toUpperCase();
+        document.getElementById('fLev').value = dirData[1] ? dirData[1].replace(/x/i, '') : '';
+        
+        // Lógica de botones visuales (Pills)
+        document.querySelectorAll('.dir-pill').forEach(btn => btn.classList.remove('sel-long', 'sel-short'));
+        if (dir === 'LONG') {
+            document.getElementById('dirLong').classList.add('sel-long');
+        } else {
+            document.getElementById('dirShort').classList.add('sel-short');
+        }
+
+        // RESULTADO (Ej: LOSS)
+        const res = parts[2].toUpperCase();
+        document.querySelectorAll('.res-pill').forEach(btn => btn.classList.remove('sel-win', 'sel-loss'));
+        if (res === 'WIN') {
+            document.getElementById('resWin').classList.add('sel-win');
+        } else {
+            document.getElementById('resLoss').classList.add('sel-loss');
+        }
+
+        // PRECIOS Y NÚMEROS
+        document.getElementById('fEntry').value = parseNumber(parts[3]);
+        document.getElementById('fClose').value = parseNumber(parts[4]);
+        document.getElementById('fQty').value = parseNumber(parts[5]);
+        document.getElementById('fMargin').value = parseNumber(parts[6]);
+        
+        // PnL NETO (Ej: -0.0017 USDT (-0.22%) -> -0.0017)
+        document.getElementById('fPnl').value = parseNumber(parts[7]);
+        
+        document.getElementById('fFee').value = parseNumber(parts[8]);
+        document.getElementById('fFunding').value = parseNumber(parts[9]);
+        document.getElementById('fBonus').value = parseNumber(parts[10]);
+
+        // DURACIÓN (Ej: 0h 1m)
+        document.getElementById('fDuration').value = parts[11];
+
+        // Limpiar el input de importación tras rellenar con éxito
+        document.getElementById('fImport').value = '';
+        
+    } catch (e) {
+        console.error("Error procesando cadena: ", e);
+        alert('Hubo un error al leer los datos. Revisa el formato.');
+    }
+});
 </script>
 </body>
 </html>
