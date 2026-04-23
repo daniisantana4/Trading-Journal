@@ -197,6 +197,13 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .td-val{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text-2)}.td-val.green{color:var(--green)}.td-val.rose{color:var(--rose)}.td-val.amber{color:var(--amber)}
 .td-edit-btn{grid-column:1/-1;margin-top:4px;padding:8px;border:1.5px solid var(--border);border-radius:8px;background:transparent;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--cyan);cursor:pointer;transition:all .25s;-webkit-tap-highlight-color:transparent}
 .td-edit-btn:hover{background:var(--cyan-d);border-color:var(--cyan)}
+.td-bonus-row{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border);margin-top:4px}
+.td-bonus-label{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-2);display:flex;align-items:center;gap:6px}
+.td-bonus-label .tag{font-size:9px;color:var(--amber);background:var(--amber-d);padding:2px 6px;border-radius:4px}
+.td-bonus-toggle{width:36px;height:20px;border-radius:10px;background:var(--border);position:relative;cursor:pointer;transition:background .3s;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.td-bonus-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-2);transition:all .3s cubic-bezier(.16,1,.3,1)}
+.td-bonus-toggle.on{background:var(--amber)}
+.td-bonus-toggle.on::after{left:18px;background:#fff}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-3);font-size:13px}.empty-state .empty-icon{font-size:40px;margin-bottom:12px;opacity:.5}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
@@ -355,6 +362,15 @@ function updateBonusTrack(){$('bonusTrack').classList.toggle('on',bonusActive);}
 updateBonusTrack();
 $('bonusToggleRow').addEventListener('click',()=>{bonusActive=!bonusActive;localStorage.setItem('sync_bonus',bonusActive?'1':'0');updateBonusTrack();});
 
+/* ── Bonus helper ──────────────────────────────────────────── */
+function calcBonus(rawPnl,fee){
+  const absFee=Math.abs(fee);
+  const posProfit=rawPnl+absFee;
+  let b=absFee/2;
+  if(posProfit<0)b+=Math.abs(posProfit)/2;
+  return Math.round(b*10000)/10000;
+}
+
 /* ── BITUNIX SYNC ─────────────────────────────────────────── */
 $('syncBtn').addEventListener('click',async()=>{
   const url=$('cfgUrl').value.trim();
@@ -433,28 +449,16 @@ $('syncBtn').addEventListener('click',async()=>{
       const date=dateObj.toISOString().slice(0,10);
 
       // Bonus: mitad de comisiones + mitad de pérdida de posición (antes de fees)
-      let bonus=0;
-      if(bonusActive){
-        const absFee=Math.abs(fee);
-        // Beneficio de la posición ANTES de comisiones
-        const posProfit=rawPnl+absFee;
-        // Siempre: mitad de comisiones devueltas
-        bonus+=absFee/2;
-        // Solo si la posición en sí perdió (antes de fees): mitad de esa pérdida
-        if(posProfit<0){
-          bonus+=Math.abs(posProfit)/2;
-        }
-        bonus=Math.round(bonus*10000)/10000;
-      }
+      const bonus=bonusActive?calcBonus(rawPnl,fee):0;
 
       // PnL efectivo = PnL bruto + lo que te ahorras del bono
       const effectivePnl=Math.round((rawPnl+bonus)*10000)/10000;
       const result=effectivePnl>=0?'win':'loss';
 
       trades.push({
-        id:Date.now()+added, positionId:pid, date, pair:pair.toUpperCase(), dir, result, pnl:effectivePnl,
+        id:Date.now()+added, positionId:pid, date, pair:pair.toUpperCase(), dir, result, pnl:effectivePnl, rawPnl,
         entry:entryPrice, close:closePrice, leverage, qty:maxQty,
-        margin:Math.round(margin*10000)/10000, fee, funding, bonus, duration,
+        margin:Math.round(margin*10000)/10000, fee, funding, bonus, bonusOn:bonusActive, duration,
       });
       existingPids.add(pid);
       added++;
@@ -581,13 +585,19 @@ function renderTrades(){
   list.innerHTML=f.map(t=>{
     const levStr=t.leverage?` <span class="trade-pair-lev">${t.leverage}x</span>`:'';
     const feeT=(t.fee||0)+(t.funding||0);
-    const hasD=(t.entry||t.close||t.leverage||t.fee||t.funding||t.bonus||t.margin||t.duration);
+    const hasD=(t.entry||t.close||t.leverage||t.fee||t.funding||t.bonus||t.margin||t.duration||t.rawPnl);
+    const hasFee=(t.fee||0)!==0;
     const detailHtml=`<div class="trade-detail" data-detail="${t.id}"><div class="trade-detail-inner">
       ${t.entry?df('Entry',fmtP(t.entry)):''}${t.close?df('Close',fmtP(t.close)):''}
       ${t.qty?df('Cantidad',fmtP(t.qty)):''}${t.margin?df('Margen',fmt(t.margin)+'$'):''}
       ${t.fee?df('Comisiones',fmt(t.fee)+'$','rose'):''}${t.funding?df('Funding',fmt(t.funding)+'$','rose'):''}
-      ${t.bonus?df('Bono',fmt(-Math.abs(t.bonus))+'$','amber'):''}
+      ${t.rawPnl!==undefined?df('PnL Bitunix',fmt(t.rawPnl)+'$',t.rawPnl>=0?'green':'rose'):''}
+      ${t.bonus?df('Ahorro bono','+'+fmt(t.bonus)+'$','amber'):''}
       ${t.margin?df('PnL %',(t.pnl/t.margin*100).toFixed(2)+'%',t.pnl>=0?'green':'rose'):''}
+      ${hasFee?`<div class="td-bonus-row">
+        <span class="td-bonus-label">Bono activo ${t.bonusOn?`<span class="tag">${fmt(t.bonus||0)}$</span>`:''}</span>
+        <div class="td-bonus-toggle ${t.bonusOn?'on':''}" data-bonus="${t.id}"></div>
+      </div>`:''}
       <button class="td-edit-btn" data-edit="${t.id}">✎ Editar</button>
     </div></div>`;
     return `<div class="trade-item" data-id="${t.id}">
@@ -610,6 +620,23 @@ function renderTrades(){
     const fc=$('formCollapse'),ft=$('formToggle');if(!fc.classList.contains('open')){fc.classList.add('open');ft.classList.add('open');ft.innerHTML='Ocultar formulario <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>';}
     trades=trades.filter(x=>x.id!==id);save(trades);render();
     $('formCard').scrollIntoView({behavior:'smooth',block:'center'});toast('Editando — modifica y pulsa Registrar');
+  }));
+  // Bonus toggle per trade
+  list.querySelectorAll('.td-bonus-toggle').forEach(tog=>tog.addEventListener('click',e=>{
+    e.stopPropagation();
+    const id=parseInt(tog.dataset.bonus);
+    const t=trades.find(x=>x.id===id);
+    if(!t||t.rawPnl===undefined)return;
+    t.bonusOn=!t.bonusOn;
+    if(t.bonusOn){
+      t.bonus=calcBonus(t.rawPnl,t.fee||0);
+      t.pnl=Math.round((t.rawPnl+t.bonus)*10000)/10000;
+    }else{
+      t.bonus=0;
+      t.pnl=Math.round(t.rawPnl*10000)/10000;
+    }
+    t.result=t.pnl>=0?'win':'loss';
+    save(trades);render();
   }));
 }
 function df(l,v,c=''){return`<div class="td-field"><span class="td-label">${l}</span><span class="td-val ${c}">${v}</span></div>`;}
