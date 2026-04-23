@@ -323,6 +323,8 @@ body.light .cal-day.neutral{background:#d5d8e2}
 
   <div class="export-row anim a6">
     <button class="export-btn primary" id="exportBtn">↓ Exportar CSV</button>
+    <button class="export-btn primary" id="importBtn">↑ Importar CSV</button>
+    <input type="file" id="importFile" accept=".csv" style="display:none">
     <button class="export-btn danger" id="clearBtn">Borrar todo</button>
   </div>
   <div class="toast" id="toast"></div>
@@ -734,6 +736,64 @@ function toast(msg,type='success'){const t=$('toast');t.textContent=msg;t.classN
 
 /* ── Export CSV ────────────────────────────────────────────── */
 $('exportBtn').addEventListener('click',()=>{if(!trades.length)return;const csv='Fecha,Cripto,Dirección,Resultado,PnL,Entry,Close,Leverage,Cantidad,Margen,Comisiones,Funding,Bono,Duración\n'+trades.map(t=>[t.date,t.pair,t.dir,t.result==='win'?'Éxito':'Pérdida',t.pnl,t.entry||'',t.close||'',t.leverage||'',t.qty||'',t.margin||'',t.fee||'',t.funding||'',t.bonus||'',`"${t.duration||''}"`].join(',')).join('\n');const b=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='trading-journal.csv';a.click();toast('CSV descargado');});
+
+/* ── Import CSV ───────────────────────────────────────────── */
+$('importBtn').addEventListener('click',()=>$('importFile').click());
+$('importFile').addEventListener('change',e=>{
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const lines=ev.target.result.trim().split('\n');
+      if(lines.length<2)throw new Error('empty');
+      const header=lines[0].toLowerCase();
+      if(!header.includes('fecha')&&!header.includes('date'))throw new Error('bad header');
+      const existingKeys=new Set(trades.map(t=>t.date+t.pair+t.dir+t.pnl));
+      let added=0;
+      for(let i=1;i<lines.length;i++){
+        const row=parseCSVLine(lines[i]);
+        if(row.length<5)continue;
+        const date=row[0]||'';
+        const pair=(row[1]||'').toUpperCase();
+        const dir=(row[2]||'').toLowerCase();
+        const resRaw=(row[3]||'').toLowerCase();
+        const result=(resRaw==='éxito'||resRaw==='exito'||resRaw==='win')?'win':'loss';
+        const pnl=parseFloat(row[4])||0;
+        const entry=parseFloat(row[5])||0;
+        const close=parseFloat(row[6])||0;
+        const leverage=parseInt(row[7])||0;
+        const qty=parseFloat(row[8])||0;
+        const margin=parseFloat(row[9])||0;
+        const fee=parseFloat(row[10])||0;
+        const funding=parseFloat(row[11])||0;
+        const bonus=parseFloat(row[12])||0;
+        const duration=(row[13]||'').replace(/^"|"$/g,'').trim();
+        const key=date+pair+dir+pnl;
+        if(existingKeys.has(key))continue;
+        trades.push({id:Date.now()+added,positionId:'',date,pair,dir,result,pnl,
+          entry,close,leverage,qty,margin,fee,funding,bonus,bonusOn:bonus>0,duration,mtime:0});
+        existingKeys.add(key);added++;
+      }
+      sortTrades();save(trades);render();
+      toast(added>0?`${added} operaciones importadas`:'Sin operaciones nuevas');
+    }catch(err){
+      console.error('CSV import error:',err);
+      toast('Archivo CSV inválido','error');
+    }
+    $('importFile').value='';
+  };
+  reader.readAsText(file);
+});
+
+function parseCSVLine(line){
+  const r=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(inQ){if(c==='"'&&line[i+1]==='"'){cur+='"';i++;}else if(c==='"'){inQ=false;}else{cur+=c;}}
+    else{if(c==='"'){inQ=true;}else if(c===','){r.push(cur);cur='';}else{cur+=c;}}
+  }
+  r.push(cur);return r;
+}
 $('clearBtn').addEventListener('click',()=>{if(confirm('¿Borrar todas las operaciones?')){trades=[];save(trades);render();toast('Datos eliminados');}});
 
 /* ── Nav ──────────────────────────────────────────────────── */
