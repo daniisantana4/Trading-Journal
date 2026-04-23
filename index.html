@@ -432,14 +432,17 @@ $('syncBtn').addEventListener('click',async()=>{
       const dateObj=mtime?new Date(mtime):new Date();
       const date=dateObj.toISOString().slice(0,10);
 
-      // Bonus: mitad de pérdidas + mitad de comisiones
+      // Bonus: mitad de comisiones + mitad de pérdida de posición (antes de fees)
       let bonus=0;
       if(bonusActive){
         const absFee=Math.abs(fee);
-        if(rawPnl<0){
-          bonus=Math.abs(rawPnl)/2+absFee/2;
-        }else{
-          bonus=absFee/2;
+        // Beneficio de la posición ANTES de comisiones
+        const posProfit=rawPnl+absFee;
+        // Siempre: mitad de comisiones devueltas
+        bonus+=absFee/2;
+        // Solo si la posición en sí perdió (antes de fees): mitad de esa pérdida
+        if(posProfit<0){
+          bonus+=Math.abs(posProfit)/2;
         }
         bonus=Math.round(bonus*10000)/10000;
       }
