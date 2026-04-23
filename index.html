@@ -253,6 +253,11 @@ body.light .cal-day.neutral{background:#d5d8e2}
       <div class="sync-config">
         <div class="sync-config-row"><label>URL</label><input type="text" id="cfgUrl" placeholder="https://tu-bot.railway.app"></div>
         <div class="sync-config-row"><label>Token</label><input type="password" id="cfgToken" placeholder="tu_sync_token"></div>
+        <div class="sync-config-row" style="margin-top:8px;cursor:pointer" id="bonusToggleRow">
+          <label style="width:auto;cursor:pointer">Bono</label>
+          <span style="font-size:11px;color:var(--text-3);flex:1">Bono activo — mitad de pérdidas y comisiones</span>
+          <div class="toggle-track" id="bonusTrack"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -344,6 +349,12 @@ $('cfgToken').value=localStorage.getItem('sync_token')||'';
 $('cfgUrl').addEventListener('change',()=>localStorage.setItem('sync_url',$('cfgUrl').value.trim()));
 $('cfgToken').addEventListener('change',()=>localStorage.setItem('sync_token',$('cfgToken').value.trim()));
 
+// Bonus toggle
+let bonusActive=localStorage.getItem('sync_bonus')==='1';
+function updateBonusTrack(){$('bonusTrack').classList.toggle('on',bonusActive);}
+updateBonusTrack();
+$('bonusToggleRow').addEventListener('click',()=>{bonusActive=!bonusActive;localStorage.setItem('sync_bonus',bonusActive?'1':'0');updateBonusTrack();});
+
 /* ── BITUNIX SYNC ─────────────────────────────────────────── */
 $('syncBtn').addEventListener('click',async()=>{
   const url=$('cfgUrl').value.trim();
@@ -376,14 +387,23 @@ $('syncBtn').addEventListener('click',async()=>{
     const existingPids=new Set(trades.filter(t=>t.positionId).map(t=>t.positionId));
     let added=0;
 
+    // Client-side month filter (safety): only trades closed this month
+    const now=new Date();
+    const monthStart=new Date(now.getFullYear(),now.getMonth(),1).getTime();
+
     for(const p of positions){
       const pid=String(p.positionId||'');
       if(!pid||existingPids.has(pid))continue;
 
+      // Filter: only closed (mtime) in current month
+      const mtime=parseInt(p.mtime)||0;
+      if(mtime>0&&mtime<monthStart)continue;
+
       const symbol=p.symbol||'';
       const pair=symbol.replace(/USDT$|USDC$|USD$/i,'');
       const side=(p.side||'').toUpperCase();
-      const dir=side==='SHORT'?'short':'long';
+      // Bitunix uses BUY/SELL, not LONG/SHORT
+      const dir=(side==='SELL'||side==='SHORT')?'short':'long';
       const leverage=parseInt(p.leverage)||0;
       const entryPrice=parseFloat(p.entryPrice)||0;
       const closePrice=parseFloat(p.closePrice)||0;
@@ -393,7 +413,6 @@ $('syncBtn').addEventListener('click',async()=>{
       const pnl=parseFloat(p.realizedPNL)||0;
       const margin=leverage>0?Math.abs(entryPrice*maxQty/leverage):0;
       const ctime=parseInt(p.ctime)||0;
-      const mtime=parseInt(p.mtime)||0;
 
       // Duration from ctime→mtime
       let duration='';
@@ -409,10 +428,22 @@ $('syncBtn').addEventListener('click',async()=>{
       const date=dateObj.toISOString().slice(0,10);
       const result=pnl>=0?'win':'loss';
 
+      // Bonus: si activo, mitad de pérdidas + mitad de comisiones
+      let bonus=0;
+      if(bonusActive){
+        const absFee=Math.abs(fee);
+        if(pnl<0){
+          bonus=Math.abs(pnl)/2+absFee/2;
+        }else{
+          bonus=absFee/2;
+        }
+        bonus=Math.round(bonus*10000)/10000;
+      }
+
       trades.push({
         id:Date.now()+added, positionId:pid, date, pair:pair.toUpperCase(), dir, result, pnl:Math.round(pnl*10000)/10000,
         entry:entryPrice, close:closePrice, leverage, qty:maxQty,
-        margin:Math.round(margin*10000)/10000, fee, funding, bonus:0, duration,
+        margin:Math.round(margin*10000)/10000, fee, funding, bonus, duration,
       });
       existingPids.add(pid);
       added++;
