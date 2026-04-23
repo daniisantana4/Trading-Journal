@@ -401,16 +401,21 @@ $('syncBtn').addEventListener('click',async()=>{
 
       const symbol=p.symbol||'';
       const pair=symbol.replace(/USDT$|USDC$|USD$/i,'');
-      const side=(p.side||'').toUpperCase();
-      // Bitunix uses BUY/SELL, not LONG/SHORT
-      const dir=(side==='SELL'||side==='SHORT')?'short':'long';
+
+      // Debug: log raw side value from Bitunix
+      const rawSide=p.side||'';
+      console.log(`[SYNC] ${symbol} side="${rawSide}" pnl=${p.realizedPNL} fee=${p.fee}`);
+      // Match any variation: sell, short, 2 → short. Everything else → long
+      const sideLower=String(rawSide).toLowerCase();
+      const dir=(sideLower==='sell'||sideLower==='short'||rawSide==='2')?'short':'long';
+
       const leverage=parseInt(p.leverage)||0;
       const entryPrice=parseFloat(p.entryPrice)||0;
       const closePrice=parseFloat(p.closePrice)||0;
       const maxQty=parseFloat(p.maxQty)||0;
       const fee=parseFloat(p.fee)||0;
       const funding=parseFloat(p.funding)||0;
-      const pnl=parseFloat(p.realizedPNL)||0;
+      const rawPnl=parseFloat(p.realizedPNL)||0;
       const margin=leverage>0?Math.abs(entryPrice*maxQty/leverage):0;
       const ctime=parseInt(p.ctime)||0;
 
@@ -426,22 +431,25 @@ $('syncBtn').addEventListener('click',async()=>{
       // Date from mtime (close time)
       const dateObj=mtime?new Date(mtime):new Date();
       const date=dateObj.toISOString().slice(0,10);
-      const result=pnl>=0?'win':'loss';
 
-      // Bonus: si activo, mitad de pérdidas + mitad de comisiones
+      // Bonus: mitad de pérdidas + mitad de comisiones
       let bonus=0;
       if(bonusActive){
         const absFee=Math.abs(fee);
-        if(pnl<0){
-          bonus=Math.abs(pnl)/2+absFee/2;
+        if(rawPnl<0){
+          bonus=Math.abs(rawPnl)/2+absFee/2;
         }else{
           bonus=absFee/2;
         }
         bonus=Math.round(bonus*10000)/10000;
       }
 
+      // PnL efectivo = PnL bruto + lo que te ahorras del bono
+      const effectivePnl=Math.round((rawPnl+bonus)*10000)/10000;
+      const result=effectivePnl>=0?'win':'loss';
+
       trades.push({
-        id:Date.now()+added, positionId:pid, date, pair:pair.toUpperCase(), dir, result, pnl:Math.round(pnl*10000)/10000,
+        id:Date.now()+added, positionId:pid, date, pair:pair.toUpperCase(), dir, result, pnl:effectivePnl,
         entry:entryPrice, close:closePrice, leverage, qty:maxQty,
         margin:Math.round(margin*10000)/10000, fee, funding, bonus, duration,
       });
