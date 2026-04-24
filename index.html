@@ -207,7 +207,7 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .td-bonus-label{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-2);display:flex;align-items:center;gap:6px}
 .td-bonus-label .tag{font-size:9px;color:var(--amber);background:var(--amber-d);padding:2px 6px;border-radius:4px}
 .td-bonus-toggle{width:36px;height:20px;border-radius:10px;background:var(--border);position:relative;cursor:pointer;transition:background .3s;flex-shrink:0;-webkit-tap-highlight-color:transparent}
-.td-bonus-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-2);transition:all .3s cubic-bezier(.16,1,.3,1)}
+.td-bonus-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-2);transition:all .3s cubic-bezier(.16,1,.3,1);pointer-events:none}
 .td-bonus-toggle.on{background:var(--amber)}
 .td-bonus-toggle.on::after{left:18px;background:#fff}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-3);font-size:13px}.empty-state .empty-icon{font-size:40px;margin-bottom:12px;opacity:.5}
@@ -677,39 +677,37 @@ function renderTrades(){
     trades=trades.filter(x=>x.id!==id);save(trades);render();
     $('formCard').scrollIntoView({behavior:'smooth',block:'center'});toast('Editando — modifica y pulsa Registrar');
   }));
-  // Bonus toggle per trade — update in place
-  list.querySelectorAll('.td-bonus-toggle').forEach(tog=>tog.addEventListener('click',e=>{
-    e.stopPropagation();
-    const id=parseInt(tog.dataset.bonus);
-    const t=trades.find(x=>x.id===id);
-    if(!t||t.rawPnl===undefined)return;
-    t.bonusOn=!t.bonusOn;
-    if(t.bonusOn){
-      t.bonus=calcBonus(t.rawPnl,t.fee||0);
-      t.pnl=Math.round((t.rawPnl+t.bonus)*10000)/10000;
-    }else{
-      t.bonus=0;
-      t.pnl=Math.round(t.rawPnl*10000)/10000;
-    }
-    t.result=t.pnl>=0?'win':'loss';
-    save(trades);
-    // Update just this trade's DOM
-    const item=list.querySelector(`[data-id="${id}"]`);
-    if(item){
-      const pnlEl=item.querySelector('.trade-pnl');
-      if(pnlEl){pnlEl.textContent=fmt(t.pnl)+'$';pnlEl.className='trade-pnl '+(t.pnl>=0?'pos':'neg');}
-      tog.classList.toggle('on',t.bonusOn);
-      // Update bonus tag
-      const label=tog.closest('.td-bonus-row').querySelector('.td-bonus-label');
-      if(label)label.innerHTML='Bono activo '+(t.bonusOn?`<span class="tag">${fmt(t.bonus||0)}$</span>`:'');
-      // Update bonus dot
-      const pairEl=item.querySelector('.trade-pair');
-      if(pairEl){const dot=pairEl.querySelector('.trade-bonus-dot');if(t.bonusOn&&!dot){pairEl.insertAdjacentHTML('beforeend','<span class="trade-bonus-dot" title="Bono activo"></span>');}else if(!t.bonusOn&&dot){dot.remove();}}
-    }
-    // Update stats without full list re-render
-    renderStats();renderChart();
-  }));
 }
+// Delegated bonus toggle on persistent parent — works on PC and mobile
+$('tradeList').addEventListener('click',e=>{
+  const tog=e.target.closest('.td-bonus-toggle');
+  if(!tog)return;
+  e.stopPropagation();e.preventDefault();
+  const id=parseInt(tog.dataset.bonus);
+  const t=trades.find(x=>x.id===id);
+  if(!t||t.rawPnl===undefined)return;
+  t.bonusOn=!t.bonusOn;
+  if(t.bonusOn){
+    t.bonus=calcBonus(t.rawPnl,t.fee||0);
+    t.pnl=Math.round((t.rawPnl+t.bonus)*10000)/10000;
+  }else{
+    t.bonus=0;
+    t.pnl=Math.round(t.rawPnl*10000)/10000;
+  }
+  t.result=t.pnl>=0?'win':'loss';
+  save(trades);
+  const item=$('tradeList').querySelector(`[data-id="${id}"]`);
+  if(item){
+    const pnlEl=item.querySelector('.trade-pnl');
+    if(pnlEl){pnlEl.textContent=fmt(t.pnl)+'$';pnlEl.className='trade-pnl '+(t.pnl>=0?'pos':'neg');}
+    tog.classList.toggle('on',t.bonusOn);
+    const label=tog.closest('.td-bonus-row').querySelector('.td-bonus-label');
+    if(label)label.innerHTML='Bono activo '+(t.bonusOn?`<span class="tag">${fmt(t.bonus||0)}$</span>`:'');
+    const pairEl=item.querySelector('.trade-pair');
+    if(pairEl){const dot=pairEl.querySelector('.trade-bonus-dot');if(t.bonusOn&&!dot){pairEl.insertAdjacentHTML('beforeend','<span class="trade-bonus-dot" title="Bono activo"></span>');}else if(!t.bonusOn&&dot){dot.remove();}}
+  }
+  renderStats();renderChart();
+});
 function df(l,v,c=''){return`<div class="td-field"><span class="td-label">${l}</span><span class="td-val ${c}">${v}</span></div>`;}
 function fmtP(v){v=parseFloat(v);if(!v)return'0';if(v>=100)return v.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2});if(v>=1)return v.toLocaleString('es-ES',{minimumFractionDigits:4,maximumFractionDigits:4});return v.toLocaleString('es-ES',{minimumFractionDigits:8,maximumFractionDigits:8});}
 
