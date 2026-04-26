@@ -612,7 +612,7 @@ const yHtml=yLabels.map(l=>`<text x="${padL-6}" y="${l.y}" text-anchor="end" fil
 // Build SVG with overlay for hover
 const svgId='eq_'+Date.now();
 w.innerHTML=`<div class="chart-title">Equity curve</div>
-<svg class="chart-svg" id="${svgId}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="height:160px">
+<svg class="chart-svg" id="${svgId}" viewBox="0 0 ${W} ${H}">
   <defs><linearGradient id="aGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${eS}"/><stop offset="100%" stop-color="transparent"/></linearGradient></defs>
   ${yHtml}
   <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="var(--border)" stroke-width="1" stroke-dasharray="4"/>
