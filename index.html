@@ -264,8 +264,21 @@ body.light .cal-day.neutral{background:#d5d8e2}
     <button class="collapse-toggle" id="syncConfigToggle" style="margin-top:8px;margin-bottom:0">Configuración <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
     <div class="collapse-body" id="syncConfigCollapse">
       <div class="sync-config">
-        <div class="sync-config-row"><label>URL</label><input type="text" id="cfgUrl" placeholder="https://tu-bot.railway.app"></div>
+        <div class="sync-config-row"><label>URL</label><input type="text" id="cfgUrl" placeholder="https://tu-bot.onrender.com"></div>
         <div class="sync-config-row"><label>Token</label><input type="password" id="cfgToken" placeholder="tu_sync_token"></div>
+        <div class="sync-config-row" style="margin-top:10px"><label>Rango</label>
+          <select class="filter-select" id="syncRange" style="flex:1">
+            <option value="7">Últimos 7 días</option>
+            <option value="14">Últimos 14 días</option>
+            <option value="30">Últimos 30 días</option>
+            <option value="month">Este mes</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+        <div class="sync-config-row" id="syncCustomRange" style="display:none">
+          <label>Desde</label><input type="date" id="syncFrom" style="flex:1">
+          <label style="width:auto;margin-left:8px">Hasta</label><input type="date" id="syncTo" style="flex:1">
+        </div>
         <div class="sync-config-row" style="margin-top:8px;cursor:pointer" id="bonusToggleRow">
           <label style="width:auto;cursor:pointer">Bono</label>
           <span style="font-size:11px;color:var(--text-3);flex:1">Bono activo — mitad de pérdidas y comisiones</span>
@@ -370,6 +383,30 @@ function updateBonusTrack(){$('bonusTrack').classList.toggle('on',bonusActive);}
 updateBonusTrack();
 $('bonusToggleRow').addEventListener('click',()=>{bonusActive=!bonusActive;localStorage.setItem('sync_bonus',bonusActive?'1':'0');updateBonusTrack();});
 
+// Sync range selector
+$('syncRange').value=localStorage.getItem('sync_range')||'7';
+$('syncRange').addEventListener('change',()=>{
+  localStorage.setItem('sync_range',$('syncRange').value);
+  $('syncCustomRange').style.display=$('syncRange').value==='custom'?'flex':'none';
+});
+if($('syncRange').value==='custom')$('syncCustomRange').style.display='flex';
+
+function getSyncRange(){
+  const v=$('syncRange').value;
+  const now=new Date();
+  let from,to=now.getTime();
+  if(v==='custom'){
+    const f=$('syncFrom').value,t=$('syncTo').value;
+    from=f?new Date(f).getTime():now.getTime()-7*86400000;
+    if(t)to=new Date(t+'T23:59:59').getTime();
+  }else if(v==='month'){
+    from=new Date(now.getFullYear(),now.getMonth(),1).getTime();
+  }else{
+    from=now.getTime()-parseInt(v)*86400000;
+  }
+  return{from,to};
+}
+
 function sortTrades(){trades.sort((a,b)=>(b.mtime||0)-(a.mtime||0)||b.date.localeCompare(a.date)||b.id-a.id);}
 
 /* ── Bonus helper ──────────────────────────────────────────── */
@@ -396,7 +433,8 @@ $('syncBtn').addEventListener('click',async()=>{
   try{
     const headers={};
     if(token)headers['Authorization']='Bearer '+token;
-    const resp=await fetch(url.replace(/\/$/,'')+'/api/history',{headers,mode:'cors'});
+    const range=getSyncRange();
+    const resp=await fetch(url.replace(/\/$/,'')+`/api/history?from=${range.from}&to=${range.to}`,{headers,mode:'cors'});
     if(!resp.ok){
       const body=await resp.text();
       throw new Error(resp.status===401?'Token inválido':'Error '+resp.status);
@@ -413,17 +451,9 @@ $('syncBtn').addEventListener('click',async()=>{
     const existingPids=new Set(trades.filter(t=>t.positionId).map(t=>t.positionId));
     let added=0;
 
-    // Client-side month filter (safety): only trades closed this month
-    const now=new Date();
-    const monthStart=new Date(now.getFullYear(),now.getMonth(),1).getTime();
-
     for(const p of positions){
       const pid=String(p.positionId||'');
       if(!pid||existingPids.has(pid))continue;
-
-      // Filter: only closed (mtime) in current month
-      const mtime=parseInt(p.mtime)||0;
-      if(mtime>0&&mtime<monthStart)continue;
 
       const symbol=p.symbol||'';
       const pair=symbol.replace(/USDT$|USDC$|USD$/i,'');
