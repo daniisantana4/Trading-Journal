@@ -458,6 +458,8 @@ $('syncBtn').addEventListener('click',async()=>{
       const symbol=p.symbol||'';
       const pair=symbol.replace(/USDT$|USDC$|USD$/i,'');
 
+      const mtime=parseInt(p.mtime)||0;
+
       // Debug: log raw side value from Bitunix
       const rawSide=p.side||'';
       console.log(`[SYNC] ${symbol} side="${rawSide}" pnl=${p.realizedPNL} fee=${p.fee}`);
