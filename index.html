@@ -80,16 +80,6 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .sync-config-row input::placeholder{color:var(--text-3)}
 .sync-config-row input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px #00e5ff10}
 
-/* Paste import */
-.paste-card{background:var(--bg-card);border:1.5px dashed var(--border);border-radius:14px;padding:16px;margin-bottom:12px;transition:all .3s}
-.paste-card:focus-within{border-color:var(--cyan);border-style:solid;box-shadow:0 0 0 3px #00e5ff10}
-.paste-label{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.paste-label svg{width:14px;height:14px;stroke:var(--cyan);stroke-width:2;fill:none;stroke-linecap:round}
-.paste-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-1);outline:none;transition:all .25s}
-.paste-input::placeholder{color:var(--text-3)}.paste-input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px #00e5ff10}
-.paste-hint{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-3);margin-top:6px;letter-spacing:.5px}
-.paste-ok{color:var(--green)}.paste-err{color:var(--rose)}
-
 /* Filters */
 .filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
 .filter-btn{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.5px;padding:7px 16px;border-radius:100px;border:1.5px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer;transition:all .3s;-webkit-tap-highlight-color:transparent}
@@ -249,6 +239,7 @@ body.light .cal-day.neutral{background:#d5d8e2}
   <button class="nav-item" id="navCalc"><span class="ni"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg></span>Position Sizing</button>
   <a class="nav-item" href="https://daniisantana4.github.io/Confluence-Scorer/"><span class="ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></span>Confluence Scorer</a>
   <a class="nav-item active" href="https://daniisantana4.github.io/Trading-Journal/"><span class="ni"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg></span>Trading Journal</a>
+  <a class="nav-item" href="https://daniisantana4.github.io/avg-price-calc/"><span class="ni"><svg viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></span>Precio Medio</a>
   <div class="nav-sep"></div>
   <div class="theme-row" id="themeToggle"><span class="theme-row-label"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>Modo claro</span><div class="toggle-track" id="themeTrack"></div></div>
 </div>
@@ -292,16 +283,6 @@ body.light .cal-day.neutral{background:#d5d8e2}
     </div>
   </div>
 
-  <!-- ══════ PASTE IMPORT ══════ -->
-  <button class="collapse-toggle anim a1" id="pasteToggle" style="margin-top:8px;margin-bottom:8px">Importar desde Telegram <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
-  <div class="collapse-body" id="pasteCollapse">
-    <div class="paste-card">
-      <div class="paste-label"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>Pegar cadena del bot</div>
-      <input type="text" class="paste-input" id="pasteInput" placeholder="(BTC/USDT | SHORT 20x | LOSS | 76,042.10 | ...)">
-      <div class="paste-hint" id="pasteHint">Pega la cadena de Telegram</div>
-    </div>
-  </div>
-
   <!-- ══════ MANUAL FORM ══════ -->
   <button class="collapse-toggle anim a1" id="formToggle" style="margin-top:0;margin-bottom:8px">Registrar manualmente <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
   <div class="collapse-body" id="formCollapse">
@@ -326,17 +307,22 @@ body.light .cal-day.neutral{background:#d5d8e2}
   <button class="collapse-toggle anim a3" id="statsToggle">Más estadísticas <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
   <div class="collapse-body" id="statsCollapse"><div class="stats-grid" id="statsExtra" style="margin-top:10px"></div></div>
 
-  <div class="sec anim a4">Calendario PnL</div><div class="cal-wrap anim a4" id="calWrap"></div>
-  <div class="sec anim a4">Curva de equity</div><div class="chart-wrap anim a4" id="chartWrap"></div>
-  <div class="sec anim a4">Crecimiento vs. Objetivo</div><div class="chart-wrap anim a4" id="growthWrap"></div>
-  <div class="sec anim a4">Distribución Long / Short</div><div class="chart-wrap anim a4" id="distWrap"></div>
+  <button class="collapse-toggle anim a4" id="calToggle" style="margin-top:0;margin-bottom:8px">Calendario PnL <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+  <div class="collapse-body" id="calCollapse"><div class="cal-wrap" id="calWrap"></div></div>
 
-  <div class="sec anim a5">Rendimiento por par</div>
-  <button class="collapse-toggle anim a5" id="pairsToggle" style="margin-top:0;margin-bottom:8px">Ver tabla de pares <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+  <button class="collapse-toggle anim a4" id="equityToggle" style="margin-top:0;margin-bottom:8px">Curva de equity <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+  <div class="collapse-body" id="equityCollapse"><div class="chart-wrap" id="chartWrap"></div></div>
+
+  <button class="collapse-toggle anim a4" id="growthToggle" style="margin-top:0;margin-bottom:8px">Crecimiento vs. Objetivo <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+  <div class="collapse-body" id="growthCollapse"><div class="chart-wrap" id="growthWrap"></div></div>
+
+  <button class="collapse-toggle anim a4" id="distToggle" style="margin-top:0;margin-bottom:8px">Distribución Long / Short <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+  <div class="collapse-body" id="distCollapse"><div class="chart-wrap" id="distWrap"></div></div>
+
+  <button class="collapse-toggle anim a5" id="pairsToggle" style="margin-top:8px;margin-bottom:8px">Rendimiento por par <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
   <div class="collapse-body" id="pairsCollapse"><div class="pairs-table-wrap" id="pairsWrap"></div></div>
 
-  <div class="sec anim a5">Historial <span class="sec-count" id="tradeCount">0</span></div>
-  <button class="collapse-toggle anim a5" id="tradesToggle" style="margin-top:0;margin-bottom:8px">Mostrar operaciones <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+  <button class="collapse-toggle anim a5" id="tradesToggle" style="margin-top:0;margin-bottom:8px">Historial <span class="sec-count" id="tradeCount">0</span> <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
   <div class="collapse-body" id="tradesCollapse"><div id="tradeList"></div></div>
 
   <div class="export-row anim a6">
@@ -555,34 +541,6 @@ $('syncBtn').addEventListener('click',async()=>{
 
 // Show last sync time on load
 (function(){const ls=localStorage.getItem('sync_last');if(ls)$('syncStatus').textContent='Última sync: '+ls;})();
-
-/* ── Paste import (Telegram) ──────────────────────────────── */
-$('pasteInput').addEventListener('paste',e=>{
-  setTimeout(()=>{
-    const raw=$('pasteInput').value.trim();
-    if(!raw)return;
-    const parsed=parseTelegram(raw);
-    if(!parsed){$('pasteHint').textContent='✗ Formato no reconocido';$('pasteHint').className='paste-hint paste-err';$('pasteInput').value='';return;}
-    const key=parsed.date+parsed.pair+parsed.dir+parsed.pnl;
-    if(trades.some(t=>(t.date+t.pair+t.dir+t.pnl)===key)){$('pasteHint').textContent='✗ Duplicado';$('pasteHint').className='paste-hint paste-err';$('pasteInput').value='';setTimeout(()=>{$('pasteHint').textContent='Pega la cadena de Telegram';$('pasteHint').className='paste-hint';},3000);return;}
-    trades.push(parsed);sortTrades();save(trades);render();
-    $('pasteHint').textContent='✓ '+parsed.pair+' '+parsed.dir.toUpperCase()+' '+fmt(parsed.pnl)+'$';$('pasteHint').className='paste-hint paste-ok';$('pasteInput').value='';
-    setTimeout(()=>{$('pasteHint').textContent='Pega la cadena de Telegram';$('pasteHint').className='paste-hint';},3000);
-  },50);
-});
-
-function parseTelegram(raw){
-  try{
-    let s=raw.trim();if(s.startsWith('('))s=s.slice(1);if(s.endsWith(')'))s=s.slice(0,-1);
-    const p=s.split('|').map(x=>x.trim());if(p.length<12)return null;
-    const pair=(p[0].includes('/')?p[0].split('/')[0]:p[0].replace(/USDT|USDC|USD/i,'')).toUpperCase();
-    const dp=p[1].split(/\s+/);const dir=dp[0].toLowerCase()==='long'?'long':'short';const lev=parseInt((dp[1]||'').replace('x',''))||0;
-    const res=p[2].toUpperCase()==='WIN'?'win':'loss';
-    const pn=s=>parseFloat((s||'').replace(/USDT|%/gi,'').replace(/,/g,'').trim())||0;
-    const pnlM=p[7].match(/^([+-]?[\d,.]+)/);
-    return{id:Date.now(),positionId:'',date:new Date().toISOString().slice(0,10),pair,dir,result:res,pnl:pnlM?pn(pnlM[1]):0,entry:pn(p[3]),close:pn(p[4]),leverage:lev,qty:pn(p[5]),margin:pn(p[6]),fee:pn(p[8]),funding:pn(p[9]),bonus:pn(p[10]),duration:p[11].replace(/USDT/gi,'').trim()};
-  }catch(e){return null;}
-}
 
 /* ── Direction / Result pills ─────────────────────────────── */
 document.querySelectorAll('.dir-pill').forEach(b=>b.addEventListener('click',()=>{formDir=b.dataset.dir;$('dirLong').className='dir-pill'+(formDir==='long'?' sel-long':'');$('dirShort').className='dir-pill'+(formDir==='short'?' sel-short':'');}));
@@ -913,16 +871,19 @@ const weeks=[];let cw=[];if(days.length){const fd=days[0].dow===0?6:days[0].dow-
 w.innerHTML=`<div class="cal-title">Calendario PnL — Últimos 90 días</div><div class="cal-grid">${weeks.map((wk,wi)=>{const dH=wk.map(d=>{if(!d)return'<div class="cal-day empty"></div>';const c=gc(d.pnl);const cnt=dayCount[d.date]||0;const tt=d.pnl!==null?`<div class="cal-tooltip">${d.date}<br>${fmt(d.pnl)}$ · ${cnt} trade${cnt!==1?'s':''}</div>`:`<div class="cal-tooltip">${d.date}<br>Sin trades</div>`;return`<div class="cal-day ${c}">${tt}</div>`;}).join('');return`<div class="cal-week">${wi===0||ml[wi]?`<div style="height:14px;margin-bottom:2px"><span class="cal-month-label">${ml[wi]}</span></div>`:'<div style="height:14px;margin-bottom:2px"></div>'}${dH}</div>`;}).join('')}</div><div class="cal-legend"><span class="cal-legend-label">Pérdida</span><div class="cal-legend-box" style="background:var(--rose)"></div><div class="cal-legend-box" style="background:#ff3d7155"></div><div class="cal-legend-box" style="background:var(--border)"></div><div class="cal-legend-box" style="background:#00ffaa55"></div><div class="cal-legend-box" style="background:var(--green)"></div><span class="cal-legend-label">Ganancia</span></div>`;}
 
 /* ── Render ───────────────────────────────────────────────── */
-function render(){updatePairDD();renderStats();renderCalendar();renderChart();renderGrowth();renderDist();renderPairs();renderTrades();$('tradeCount').textContent=filtered().length;}
+function render(){updatePairDD();renderStats();renderCalendar();renderChart();renderGrowth();renderDist();renderPairs();renderTrades();const tc=$('tradeCount');if(tc)tc.textContent=filtered().length;}
 render();
 
 /* ── Collapsibles ─────────────────────────────────────────── */
 function setupToggle(b,bd,lO,lC){const btn=$(b),body=$(bd);btn.addEventListener('click',()=>{const o=body.classList.toggle('open');btn.classList.toggle('open',o);btn.innerHTML=(o?lO:lC)+' <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>';});}
 setupToggle('statsToggle','statsCollapse','Menos estadísticas','Más estadísticas');
-setupToggle('pairsToggle','pairsCollapse','Ocultar tabla','Ver tabla de pares');
-setupToggle('tradesToggle','tradesCollapse','Ocultar operaciones','Mostrar operaciones');
+setupToggle('calToggle','calCollapse','Ocultar calendario','Calendario PnL');
+setupToggle('equityToggle','equityCollapse','Ocultar equity','Curva de equity');
+setupToggle('growthToggle','growthCollapse','Ocultar crecimiento','Crecimiento vs. Objetivo');
+setupToggle('distToggle','distCollapse','Ocultar distribución','Distribución Long / Short');
+setupToggle('pairsToggle','pairsCollapse','Ocultar pares','Rendimiento por par');
+setupToggle('tradesToggle','tradesCollapse','Ocultar operaciones <span class="sec-count" id="tradeCount">0</span>','Historial <span class="sec-count" id="tradeCount">0</span>');
 setupToggle('formToggle','formCollapse','Ocultar formulario','Registrar manualmente');
-setupToggle('pasteToggle','pasteCollapse','Ocultar paste','Importar desde Telegram');
 setupToggle('syncConfigToggle','syncConfigCollapse','Ocultar configuración','Configuración');
 
 /* ── Toast ────────────────────────────────────────────────── */
