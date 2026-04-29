@@ -136,6 +136,9 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .chart-title{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
 .chart-svg{width:100%;height:160px;display:block}.chart-empty{text-align:center;padding:20px 0;color:var(--text-3);font-size:12px}
 .chart-labels{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-3)}
+.growth-legend{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;justify-content:center}
+.growth-legend-item{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-3)}
+.growth-legend-line{width:16px;height:3px;border-radius:2px}
 .chart-hover-line{stroke:var(--text-3);stroke-width:1;stroke-dasharray:3;opacity:0;transition:opacity .15s}
 .chart-hover-dot{fill:var(--cyan);opacity:0;transition:opacity .15s}
 .chart-hover-label{font-family:'JetBrains Mono',monospace;font-size:10px;fill:var(--text-1);opacity:0;transition:opacity .15s}
@@ -279,6 +282,7 @@ body.light .cal-day.neutral{background:#d5d8e2}
           <label>Desde</label><input type="date" id="syncFrom" style="flex:1">
           <label style="width:auto;margin-left:8px">Hasta</label><input type="date" id="syncTo" style="flex:1">
         </div>
+        <div class="sync-config-row" style="margin-top:6px"><label>Capital</label><input type="number" id="cfgCapital" placeholder="Capital inicio de mes (USD)" step="0.01" style="flex:1"></div>
         <div class="sync-config-row" style="margin-top:8px;cursor:pointer" id="bonusToggleRow">
           <label style="width:auto;cursor:pointer">Bono</label>
           <span style="font-size:11px;color:var(--text-3);flex:1">Bono activo — mitad de pérdidas y comisiones</span>
@@ -324,6 +328,7 @@ body.light .cal-day.neutral{background:#d5d8e2}
 
   <div class="sec anim a4">Calendario PnL</div><div class="cal-wrap anim a4" id="calWrap"></div>
   <div class="sec anim a4">Curva de equity</div><div class="chart-wrap anim a4" id="chartWrap"></div>
+  <div class="sec anim a4">Crecimiento vs. Objetivo</div><div class="chart-wrap anim a4" id="growthWrap"></div>
   <div class="sec anim a4">Distribución Long / Short</div><div class="chart-wrap anim a4" id="distWrap"></div>
 
   <div class="sec anim a5">Rendimiento por par</div>
@@ -374,8 +379,10 @@ $('fDate').value=new Date().toISOString().slice(0,10);
 /* ── Sync config persistence ──────────────────────────────── */
 $('cfgUrl').value=localStorage.getItem('sync_url')||'';
 $('cfgToken').value=localStorage.getItem('sync_token')||'';
+$('cfgCapital').value=localStorage.getItem('sync_capital')||'';
 $('cfgUrl').addEventListener('change',()=>localStorage.setItem('sync_url',$('cfgUrl').value.trim()));
 $('cfgToken').addEventListener('change',()=>localStorage.setItem('sync_token',$('cfgToken').value.trim()));
+$('cfgCapital').addEventListener('change',()=>{localStorage.setItem('sync_capital',$('cfgCapital').value.trim());render();});
 
 // Bonus toggle
 let bonusActive=localStorage.getItem('sync_bonus')==='1';
@@ -518,6 +525,23 @@ $('syncBtn').addEventListener('click',async()=>{
     }else{
       status.textContent=`Todo al día — sin nuevas operaciones (${lastSync})`;status.className='sync-status ok';
     }
+
+    // Fetch current balance and auto-calculate capital if not set
+    try{
+      const bResp=await fetch(url.replace(/\/$/,'')+'/api/balance',{headers,mode:'cors'});
+      if(bResp.ok){
+        const bData=await bResp.json();
+        const equity=bData.equity||0;
+        localStorage.setItem('sync_equity',equity.toFixed(2));
+        // Auto-fill capital if empty: equity - total PnL this month
+        if(!$('cfgCapital').value){
+          const monthPnl=trades.filter(t=>{const n=new Date();const ms=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');return t.date.startsWith(ms);}).reduce((a,t)=>a+t.pnl,0);
+          const estimated=Math.round((equity-monthPnl)*100)/100;
+          if(estimated>0){$('cfgCapital').value=estimated;localStorage.setItem('sync_capital',String(estimated));}
+        }
+      }
+    }catch(e){console.log('Balance fetch skipped:',e);}
+    render();
     // Auto-collapse config if open
     const cc=$('syncConfigCollapse'),ct=$('syncConfigToggle');
     if(cc.classList.contains('open')){cc.classList.remove('open');ct.classList.remove('open');ct.innerHTML='Configuración <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>';}
@@ -664,6 +688,146 @@ if(overlay){
 function renderDist(){const f=filtered(),w=$('distWrap');const l=f.filter(t=>t.dir==='long'),s=f.filter(t=>t.dir==='short');const lW=l.filter(t=>t.result==='win').length,sW=s.filter(t=>t.result==='win').length;const lWr=l.length?((lW/l.length)*100).toFixed(0):0,sWr=s.length?((sW/s.length)*100).toFixed(0):0;const mx=Math.max(l.length,s.length,1);
 w.innerHTML=`<div class="dist-row"><div class="dist-label">Long</div><div class="dist-bar-wrap"><div class="dist-bar green" style="width:${(l.length/mx)*100}%"></div></div><div class="dist-count">${l.length}</div></div><div style="font-size:10px;color:var(--text-3);margin:-4px 0 8px 60px;font-family:'JetBrains Mono',monospace">WR: ${lWr}% · PnL: ${fmt(l.reduce((a,t)=>a+t.pnl,0))}$</div><div class="dist-row"><div class="dist-label">Short</div><div class="dist-bar-wrap"><div class="dist-bar rose" style="width:${(s.length/mx)*100}%"></div></div><div class="dist-count">${s.length}</div></div><div style="font-size:10px;color:var(--text-3);margin:-4px 0 0 60px;font-family:'JetBrains Mono',monospace">WR: ${sWr}% · PnL: ${fmt(s.reduce((a,t)=>a+t.pnl,0))}$</div>`;}
 
+/* ── Growth vs Target chart ───────────────────────────────── */
+function renderGrowth(){
+  const w=$('growthWrap');
+  const capital=parseFloat(localStorage.getItem('sync_capital'))||0;
+  if(!capital){w.innerHTML='<div class="chart-title">Crecimiento vs. Objetivo mensual</div><div class="chart-empty">Configura el capital inicial del mes en Configuración</div>';return;}
+
+  // Get this month's trades sorted by date
+  const now=new Date();
+  const ms=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const monthTrades=[...trades].filter(t=>t.date.startsWith(ms)).sort((a,b)=>a.date.localeCompare(b.date)||(a.mtime||0)-(b.mtime||0)||a.id-b.id);
+
+  // Days in month
+  const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const today=now.getDate();
+
+  // Build daily PnL
+  const dailyPnl={};
+  monthTrades.forEach(t=>{const d=parseInt(t.date.split('-')[2]);dailyPnl[d]=(dailyPnl[d]||0)+t.pnl;});
+
+  // Real curve: cumulative % from capital
+  const realPts=[{day:0,pct:0}];
+  let cumPnl=0;
+  for(let d=1;d<=today;d++){
+    cumPnl+=(dailyPnl[d]||0);
+    realPts.push({day:d,pct:(cumPnl/capital)*100});
+  }
+
+  // Target curves (compound): pct at day d = ((1+rate)^(d/daysInMonth) - 1) * 100
+  function targetPts(rate){
+    const pts=[];
+    for(let d=0;d<=daysInMonth;d++){
+      pts.push({day:d,pct:(Math.pow(1+rate,d/daysInMonth)-1)*100});
+    }
+    return pts;
+  }
+  const t4=targetPts(0.04);
+  const t7=targetPts(0.07);
+  const t11=targetPts(0.11);
+
+  // Chart dimensions
+  const W=600,H=200,padL=50,padR=10,padT=16,padB=24;
+  const cW=W-padL-padR,cH=H-padT-padB;
+
+  // Y range: include all curves
+  const allPcts=[...realPts.map(p=>p.pct),...t11.map(p=>p.pct),0];
+  const minRealPct=Math.min(...realPts.map(p=>p.pct));
+  if(minRealPct<0)allPcts.push(minRealPct*1.1);
+  const yMin=Math.min(...allPcts)-0.5;
+  const yMax=Math.max(...allPcts)+0.5;
+  const yRng=yMax-yMin||1;
+
+  function toX(day){return padL+(day/daysInMonth)*cW;}
+  function toY(pct){return padT+cH-((pct-yMin)/yRng)*cH;}
+
+  function polyline(pts,maxDay){
+    return pts.filter(p=>p.day<=maxDay).map((p,i)=>(i===0?'M':'L')+toX(p.day).toFixed(1)+','+toY(p.pct).toFixed(1)).join(' ');
+  }
+
+  // Channel fill (4% to 11%)
+  const channelTop=t11.map(p=>`${toX(p.day).toFixed(1)},${toY(p.pct).toFixed(1)}`).join(' ');
+  const channelBot=[...t4].reverse().map(p=>`${toX(p.day).toFixed(1)},${toY(p.pct).toFixed(1)}`).join(' ');
+  const channelPath=`M ${channelTop} L ${channelBot} Z`;
+
+  // Y axis labels
+  const ySteps=[];
+  const step=yRng>10?Math.ceil(yRng/5):yRng>4?1:0.5;
+  for(let v=Math.ceil(yMin/step)*step;v<=yMax;v+=step){ySteps.push(v);}
+  const yLabelsHtml=ySteps.map(v=>`<text x="${padL-6}" y="${toY(v)+3}" text-anchor="end" fill="var(--text-3)" font-family="JetBrains Mono" font-size="9">${v.toFixed(v%1?1:0)}%</text><line x1="${padL}" y1="${toY(v)}" x2="${W-padR}" y2="${toY(v)}" stroke="var(--border)" stroke-width="0.5"/>`).join('');
+
+  // Zero line
+  const zeroY=toY(0);
+  const zeroLine=`<line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="var(--text-3)" stroke-width="1" stroke-dasharray="4" opacity="0.5"/>`;
+
+  // Today marker
+  const todayX=toX(today);
+  const todayLine=`<line x1="${todayX}" y1="${padT}" x2="${todayX}" y2="${padT+cH}" stroke="var(--text-3)" stroke-width="1" stroke-dasharray="3" opacity="0.3"/>`;
+
+  // Current real %
+  const currentPct=realPts[realPts.length-1].pct;
+  const currentColor=currentPct>=t7[today]?.pct?'var(--green)':currentPct>=t4[today]?.pct?'var(--amber)':'var(--rose)';
+
+  // Last real point
+  const lastRX=toX(today);
+  const lastRY=toY(currentPct);
+
+  // X axis: day labels
+  const xLabels=[1,Math.round(daysInMonth/4),Math.round(daysInMonth/2),Math.round(daysInMonth*3/4),daysInMonth];
+  const xLabelsHtml=xLabels.map(d=>`<text x="${toX(d)}" y="${H-4}" text-anchor="middle" fill="var(--text-3)" font-family="JetBrains Mono" font-size="9">${d}</text>`).join('');
+
+  const gId='gr_'+Date.now();
+  w.innerHTML=`<div class="chart-title">Crecimiento vs. Objetivo mensual — <span style="color:${currentColor};font-weight:700">${currentPct>=0?'+':''}${currentPct.toFixed(2)}%</span></div>
+<svg class="chart-svg" id="${gId}" viewBox="0 0 ${W} ${H}" style="height:200px">
+  <defs>
+    <linearGradient id="chGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--cyan)" stop-opacity="0.08"/><stop offset="100%" stop-color="var(--cyan)" stop-opacity="0.02"/></linearGradient>
+  </defs>
+  ${yLabelsHtml}
+  ${zeroLine}
+  ${todayLine}
+  <!-- Channel fill -->
+  <path d="${channelPath}" fill="url(#chGrad)"/>
+  <!-- 4% lower -->
+  <path d="${polyline(t4,daysInMonth)}" fill="none" stroke="var(--cyan)" stroke-width="1" opacity="0.3" stroke-dasharray="4"/>
+  <!-- 7% center -->
+  <path d="${polyline(t7,daysInMonth)}" fill="none" stroke="var(--cyan)" stroke-width="1.5" opacity="0.6" stroke-dasharray="6 3"/>
+  <!-- 11% upper -->
+  <path d="${polyline(t11,daysInMonth)}" fill="none" stroke="var(--cyan)" stroke-width="1" opacity="0.3" stroke-dasharray="4"/>
+  <!-- Real curve -->
+  <path d="${polyline(realPts,today)}" fill="none" stroke="${currentColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="${lastRX}" cy="${lastRY}" r="4" fill="${currentColor}"/>
+  <!-- Labels on curves -->
+  <text x="${W-padR-2}" y="${toY(t4[daysInMonth].pct)+3}" text-anchor="end" fill="var(--cyan)" font-family="JetBrains Mono" font-size="8" opacity="0.5">4%</text>
+  <text x="${W-padR-2}" y="${toY(t7[daysInMonth].pct)+3}" text-anchor="end" fill="var(--cyan)" font-family="JetBrains Mono" font-size="8" opacity="0.7">7%</text>
+  <text x="${W-padR-2}" y="${toY(t11[daysInMonth].pct)+3}" text-anchor="end" fill="var(--cyan)" font-family="JetBrains Mono" font-size="8" opacity="0.5">11%</text>
+  ${xLabelsHtml}
+  <rect x="${padL}" y="${padT}" width="${cW}" height="${cH}" fill="transparent" id="${gId}_ov"/>
+</svg>
+<div class="growth-legend">
+  <span class="growth-legend-item"><span class="growth-legend-line" style="background:${currentColor}"></span>Real</span>
+  <span class="growth-legend-item"><span class="growth-legend-line" style="background:var(--cyan);opacity:0.6"></span>Objetivo 7%</span>
+  <span class="growth-legend-item"><span class="growth-legend-line" style="background:var(--cyan);opacity:0.2"></span>Canal 4-11%</span>
+</div>`;
+  // Hover
+  const svg=document.getElementById(gId),ov=document.getElementById(gId+'_ov');
+  if(ov){
+    const showAt=(cx)=>{const rect=svg.getBoundingClientRect();const svgX=(cx-rect.left)/rect.width*W;const day=Math.round((svgX-padL)/cW*daysInMonth);const d=Math.max(0,Math.min(today,day));const rp=realPts[d]||realPts[realPts.length-1];const tp=t7[d]||t7[0];
+      // Remove old hover elements
+      svg.querySelectorAll('.gh').forEach(e=>e.remove());
+      const x=toX(d),y=toY(rp.pct);
+      const ns='http://www.w3.org/2000/svg';
+      const line=document.createElementNS(ns,'line');line.setAttribute('x1',x);line.setAttribute('y1',padT);line.setAttribute('x2',x);line.setAttribute('y2',padT+cH);line.setAttribute('stroke','var(--text-3)');line.setAttribute('stroke-width','1');line.setAttribute('opacity','0.4');line.classList.add('gh');svg.insertBefore(line,ov);
+      const dot=document.createElementNS(ns,'circle');dot.setAttribute('cx',x);dot.setAttribute('cy',y);dot.setAttribute('r','5');dot.setAttribute('fill',currentColor);dot.classList.add('gh');svg.insertBefore(dot,ov);
+      const txt=document.createElementNS(ns,'text');txt.setAttribute('x',x);txt.setAttribute('y',y-10);txt.setAttribute('text-anchor','middle');txt.setAttribute('fill','var(--text-1)');txt.setAttribute('font-family','JetBrains Mono');txt.setAttribute('font-size','10');txt.textContent=`Día ${d}: ${rp.pct>=0?'+':''}${rp.pct.toFixed(2)}%`;txt.classList.add('gh');svg.insertBefore(txt,ov);
+    };
+    ov.addEventListener('mousemove',e=>showAt(e.clientX));
+    ov.addEventListener('touchmove',e=>{e.preventDefault();showAt(e.touches[0].clientX);},{passive:false});
+    const hide=()=>svg.querySelectorAll('.gh').forEach(e=>e.remove());
+    ov.addEventListener('mouseleave',hide);ov.addEventListener('touchend',hide);
+  }
+}
+
 /* ── Trade list ───────────────────────────────────────────── */
 function renderTrades(){
   const f=filtered(),list=$('tradeList');
@@ -749,7 +913,7 @@ const weeks=[];let cw=[];if(days.length){const fd=days[0].dow===0?6:days[0].dow-
 w.innerHTML=`<div class="cal-title">Calendario PnL — Últimos 90 días</div><div class="cal-grid">${weeks.map((wk,wi)=>{const dH=wk.map(d=>{if(!d)return'<div class="cal-day empty"></div>';const c=gc(d.pnl);const cnt=dayCount[d.date]||0;const tt=d.pnl!==null?`<div class="cal-tooltip">${d.date}<br>${fmt(d.pnl)}$ · ${cnt} trade${cnt!==1?'s':''}</div>`:`<div class="cal-tooltip">${d.date}<br>Sin trades</div>`;return`<div class="cal-day ${c}">${tt}</div>`;}).join('');return`<div class="cal-week">${wi===0||ml[wi]?`<div style="height:14px;margin-bottom:2px"><span class="cal-month-label">${ml[wi]}</span></div>`:'<div style="height:14px;margin-bottom:2px"></div>'}${dH}</div>`;}).join('')}</div><div class="cal-legend"><span class="cal-legend-label">Pérdida</span><div class="cal-legend-box" style="background:var(--rose)"></div><div class="cal-legend-box" style="background:#ff3d7155"></div><div class="cal-legend-box" style="background:var(--border)"></div><div class="cal-legend-box" style="background:#00ffaa55"></div><div class="cal-legend-box" style="background:var(--green)"></div><span class="cal-legend-label">Ganancia</span></div>`;}
 
 /* ── Render ───────────────────────────────────────────────── */
-function render(){updatePairDD();renderStats();renderCalendar();renderChart();renderDist();renderPairs();renderTrades();$('tradeCount').textContent=filtered().length;}
+function render(){updatePairDD();renderStats();renderCalendar();renderChart();renderGrowth();renderDist();renderPairs();renderTrades();$('tradeCount').textContent=filtered().length;}
 render();
 
 /* ── Collapsibles ─────────────────────────────────────────── */
