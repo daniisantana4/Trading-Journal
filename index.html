@@ -1535,7 +1535,7 @@ const SK='trading-journal-v3';
 function load(){try{return JSON.parse(localStorage.getItem(SK))||[];}catch{return[];}}
 function save(t){localStorage.setItem(SK,JSON.stringify(t));}
 
-
+let trades=load();
 let filter='month',filterPair='',filterFrom='',filterTo='';
 let formDir='long',formRes='win';
 
@@ -2814,7 +2814,7 @@ setTimeout(()=>{if(typeof jtRenderAll==='function')jtRenderAll();},50);
 /* ═══════════════════════════════════════════════════════════
    ANIMATION ENHANCEMENTS + SYNC IMPROVEMENTS
    ═══════════════════════════════════════════════════════════ */
-  let trades=load();
+
 // === Mouse-tracking glow on stat cards ===
 document.addEventListener('mousemove',e=>{
   const t=e.target.closest('.jt-stat');
