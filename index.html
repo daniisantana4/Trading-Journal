@@ -62,7 +62,7 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .nav-ham span::before,.nav-ham span::after{content:'';position:absolute;left:0;width:100%;height:2px;background:var(--text-2);border-radius:2px;transition:all .3s}
 .nav-ham span::before{top:-6px}.nav-ham span::after{top:6px}
 .nav-ham.open span{background:transparent}.nav-ham.open span::before{top:0;transform:rotate(45deg)}.nav-ham.open span::after{top:0;transform:rotate(-45deg)}
-.nav-drop{position:fixed;top:62px;right:14px;z-index:99;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:8px;backdrop-filter:blur(16px);opacity:0;transform:translateY(-8px) scale(.96);pointer-events:none;transition:all .3s cubic-bezier(.16,1,.3,1);box-shadow:0 8px 32px rgba(0,0,0,.6);min-width:230px}
+.nav-drop{position:fixed;top:62px;right:14px;z-index:99;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:8px;backdrop-filter:blur(16px);opacity:0;transform:translateY(-8px) scale(.96);pointer-events:none;transition:all .3s cubic-bezier(.16,1,.3,1);box-shadow:0 8px 32px rgba(0,0,0,.6);min-width:260px}
 .nav-drop.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;text-decoration:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;border:none;background:none;width:100%}
 .nav-item:hover{background:var(--border);color:var(--text-1)}
@@ -77,7 +77,7 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .toggle-track::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--text-2);transition:all .3s cubic-bezier(.16,1,.3,1)}
 .toggle-track.on{background:var(--green)}.toggle-track.on::after{left:21px;background:#fff}
 .theme-seg{display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px;flex-shrink:0}
-.theme-seg-btn{padding:5px 10px;border:none;background:transparent;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);cursor:pointer;border-radius:6px;transition:all .2s;-webkit-tap-highlight-color:transparent;letter-spacing:.5px}
+.theme-seg-btn{padding:5px 8px;border:none;background:transparent;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);cursor:pointer;border-radius:6px;transition:all .2s;-webkit-tap-highlight-color:transparent;letter-spacing:.5px}
 .theme-seg-btn:hover:not(.active){color:var(--text-2)}
 .theme-seg-btn.active{background:var(--green-d);color:var(--green);box-shadow:0 0 0 1px var(--green-s)}
 
@@ -595,6 +595,29 @@ body.matrix .cal-day.g1{background:rgba(0,230,118,.25)}body.matrix .cal-day.g2{b
 body.matrix .cal-day.r1{background:rgba(255,51,85,.25)}body.matrix .cal-day.r2{background:rgba(255,51,85,.45)}body.matrix .cal-day.r3{background:rgba(255,51,85,.68)}body.matrix .cal-day.r4{background:rgba(255,51,85,.9)}
 body.matrix .cal-day.neutral{background:#163d1c}
 
+/* ═══════════════════════════════════════════════════════════
+   OCÉANO THEME — azul marino profundo, acento cian
+   Estética: terminal institucional / Bloomberg
+   ═══════════════════════════════════════════════════════════ */
+body.ocean{
+  --bg:#020d1a;--bg-card:#061828;--bg-card-hover:#0b2236;--bg-input:#040f1e;
+  --border:#0f3050;--border-glow:#1c5080;--border-focus:#00b4d8;
+  --text-1:#dff2ff;--text-2:#5aaed6;--text-3:#246688;
+  --green:#00b4d8;--green-bright:#48cae4;--green-d:rgba(0,180,216,.12);--green-s:rgba(0,180,216,.36);
+  --green-dim:rgba(0,180,216,.16);
+  --amber:#ffd166;--amber-d:rgba(255,209,102,.12);
+  --rose:#ef476f;--rose-d:rgba(239,71,111,.13);--rose-s:rgba(239,71,111,.38);
+  --cyan:#00b4d8;--cyan-d:rgba(0,180,216,.12);
+}
+body.ocean::before{background:radial-gradient(circle,rgba(0,180,216,.065) 1px,transparent 1px);background-size:22px 22px}
+body.ocean::after{background:radial-gradient(ellipse at 10% 60%,rgba(0,80,180,.2) 0%,transparent 55%),radial-gradient(ellipse at 90% 10%,rgba(0,180,216,.12) 0%,transparent 50%)}
+body.ocean .nav-drop{box-shadow:0 8px 36px rgba(0,0,0,.92),0 0 0 1px rgba(0,180,216,.1)}
+body.ocean .submit-btn,body.ocean .sync-main-btn,body.ocean .tab-btn.active{color:#020d1a}
+body.ocean .cl-checkbox svg,body.ocean .cs-box svg{stroke:#020d1a}
+body.ocean .cal-day.g1{background:rgba(0,180,216,.25)}body.ocean .cal-day.g2{background:rgba(0,180,216,.45)}body.ocean .cal-day.g3{background:rgba(0,180,216,.68)}body.ocean .cal-day.g4{background:rgba(0,180,216,.92)}
+body.ocean .cal-day.r1{background:rgba(239,71,111,.25)}body.ocean .cal-day.r2{background:rgba(239,71,111,.45)}body.ocean .cal-day.r3{background:rgba(239,71,111,.68)}body.ocean .cal-day.r4{background:rgba(239,71,111,.92)}
+body.ocean .cal-day.neutral{background:#0f3050}
+
 @media(max-width:500px){
   .container{padding:18px 10px 40px}
   .app-title{font-size:20px}
@@ -992,6 +1015,7 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
     <span class="theme-row-label"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>Tema</span>
     <div class="theme-seg" id="themeSeg">
       <button class="theme-seg-btn" data-theme="dark">Oscuro</button>
+      <button class="theme-seg-btn" data-theme="ocean">Océano</button>
       <button class="theme-seg-btn" data-theme="matrix">Matrix</button>
       <button class="theme-seg-btn" data-theme="light">Claro</button>
     </div>
@@ -1684,9 +1708,10 @@ if(savedTab&&document.querySelector(`[data-tab="${savedTab}"]`))setTab(savedTab)
    THEME + NAV
    ═══════════════════════════════════════════════════════════ */
 function applyTheme(t){
-  document.body.classList.remove('light','matrix');
+  document.body.classList.remove('light','matrix','ocean');
   if(t==='light')document.body.classList.add('light');
   else if(t==='matrix')document.body.classList.add('matrix');
+  else if(t==='ocean')document.body.classList.add('ocean');
   localStorage.setItem('theme',t);
   document.querySelectorAll('.theme-seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===t));
 }
