@@ -379,6 +379,46 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .ps-foot{text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:1px;margin-top:18px}
 
 /* ═══════════════════════════════════════════════════════════
+   TAB: CAPITAL MANAGEMENT
+   ═══════════════════════════════════════════════════════════ */
+.cap-main-card{position:relative;background:var(--bg-card);border:1.5px solid #16c78438;border-radius:16px;padding:22px 20px;overflow:hidden;margin-bottom:14px;transition:all .35s}
+.cap-main-card:hover{border-color:var(--green);box-shadow:0 0 28px #16c78412}
+.cap-glow{position:absolute;border-radius:50%;opacity:.1;pointer-events:none}
+.cap-main-card .cap-glow{top:-60%;right:-15%;width:240px;height:240px;background:radial-gradient(circle,var(--green) 0%,transparent 70%)}
+.cap-badge{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);background:var(--green-d);border:1px solid #16c78430;padding:3px 10px;border-radius:100px;margin-bottom:10px}
+.cap-badge .dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;flex-shrink:0;margin:0}
+.cap-main-lbl{font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:8px}
+.cap-main-val{display:flex;align-items:baseline;gap:7px;margin-bottom:8px}
+.cap-main-num{font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:800;color:var(--green);line-height:1;letter-spacing:-1.5px}
+.cap-main-unit{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--green);opacity:.6}
+.cap-main-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:.5px}
+.cap-entries{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px}
+.cap-entry{position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px 13px 14px;overflow:hidden;transition:all .3s;cursor:default}
+.cap-entry:hover{transform:translateY(-2px)}
+.cap-entry .cap-glow{bottom:-50%;left:-10%;width:110px;height:110px}
+.cap-entry-tag{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.cap-entry-lbl{font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:10px}
+.cap-entry-num{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;line-height:1;margin-bottom:2px}
+.cap-entry-usdt{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-3);letter-spacing:.5px}
+.cap-bar{height:3px;border-radius:2px;margin-top:12px;background:var(--border);overflow:hidden}
+.cap-bar-fill{height:100%;border-radius:2px;width:0;transition:width .9s cubic-bezier(.16,1,.3,1)}
+.cap-e1{border-color:#16c78432}.cap-e1:hover{border-color:#16c78455}
+.cap-e1 .cap-entry-tag,.cap-e1 .cap-entry-num{color:var(--green)}
+.cap-e1 .cap-glow{background:radial-gradient(circle,var(--green) 0%,transparent 70%)}
+.cap-e1 .cap-bar-fill{background:linear-gradient(90deg,var(--green),var(--green-bright))}
+.cap-e2{border-color:#60a5fa28}.cap-e2:hover{border-color:#60a5fa55}
+.cap-e2 .cap-entry-tag,.cap-e2 .cap-entry-num{color:#60a5fa}
+.cap-e2 .cap-glow{background:radial-gradient(circle,#60a5fa 0%,transparent 70%)}
+.cap-e2 .cap-bar-fill{background:linear-gradient(90deg,#60a5fa,#93c5fd)}
+.cap-e3{border-color:#a78bfa28}.cap-e3:hover{border-color:#a78bfa55}
+.cap-e3 .cap-entry-tag,.cap-e3 .cap-entry-num{color:#a78bfa}
+.cap-e3 .cap-glow{background:radial-gradient(circle,#a78bfa 0%,transparent 70%)}
+.cap-e3 .cap-bar-fill{background:linear-gradient(90deg,#a78bfa,#c4b5fd)}
+.cap-empty{text-align:center;padding:36px 16px 20px}
+.cap-empty svg{display:block;margin:0 auto 12px}
+.cap-empty p{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-3);letter-spacing:.5px}
+
+/* ═══════════════════════════════════════════════════════════
    LIGHT THEME
    ═══════════════════════════════════════════════════════════ */
 body.light{
@@ -792,10 +832,6 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
 <!-- ────── HAMBURGER NAV ────── -->
 <div class="nav-ham" id="navHam"><span></span></div>
 <div class="nav-drop" id="navDrop">
-  <a class="nav-item" href="https://daniisantana4.github.io/avg-price-calc/">
-    <span class="ni"><svg viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></span>Precio Medio
-  </a>
-  <div class="nav-sep"></div>
   <div class="theme-row" id="themeToggle">
     <span class="theme-row-label"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>Modo claro</span>
     <div class="toggle-track" id="themeTrack"></div>
@@ -832,6 +868,10 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
     <button class="tab-btn" data-tab="sizing">
       <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/></svg>
       Tamaño
+    </button>
+    <button class="tab-btn" data-tab="capital">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 000 4h4a2 2 0 010 4H8"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>
+      Capital
     </button>
   </div>
 
@@ -1248,6 +1288,82 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
     <div class="ps-foot">Desliza el slider o pulsa un botón rápido</div>
   </div>
 
+  <!-- ════════════════════════════════════════════════════════
+       TAB 5: CAPITAL MANAGEMENT
+       ════════════════════════════════════════════════════════ -->
+  <div class="tab-content" id="tab-capital" data-tab-id="capital">
+    <div class="tab-header">
+      <div class="tab-header-label"><span class="dot"></span> Futuros</div>
+      <h2>Gestión de Capital</h2>
+      <div class="tab-header-sub">Calcula tu posición y entradas escalonadas</div>
+    </div>
+
+    <div class="sec anim a1">Capital disponible</div>
+
+    <div class="ps-field anim a2">
+      <label>Total cuenta de futuros</label>
+      <div class="ps-input-wrap">
+        <input type="number" inputmode="decimal" id="capInput" placeholder="0.00">
+        <span class="unit">USDT</span>
+      </div>
+    </div>
+
+    <div id="capResults" style="display:none">
+      <div class="ps-divider"></div>
+      <div class="sec">Posición calculada</div>
+
+      <div class="cap-main-card">
+        <div class="cap-glow"></div>
+        <div class="cap-badge"><span class="dot"></span>10% del capital</div>
+        <div class="cap-main-lbl">Posición Total</div>
+        <div class="cap-main-val">
+          <span class="cap-main-num" id="capPosNum">0,00</span>
+          <span class="cap-main-unit">USDT</span>
+        </div>
+        <div class="cap-main-sub" id="capPosSub"></div>
+      </div>
+
+      <div class="sec">Distribución de entradas</div>
+
+      <div class="cap-entries">
+        <div class="cap-entry cap-e1">
+          <div class="cap-glow"></div>
+          <div class="cap-entry-tag">1ª · 15%</div>
+          <div class="cap-entry-lbl">Primera entrada</div>
+          <div class="cap-entry-num" id="capE1Num">0,00</div>
+          <div class="cap-entry-usdt">USDT</div>
+          <div class="cap-bar"><div class="cap-bar-fill" id="capE1Bar"></div></div>
+        </div>
+        <div class="cap-entry cap-e2">
+          <div class="cap-glow"></div>
+          <div class="cap-entry-tag">2ª · 30%</div>
+          <div class="cap-entry-lbl">Segunda entrada</div>
+          <div class="cap-entry-num" id="capE2Num">0,00</div>
+          <div class="cap-entry-usdt">USDT</div>
+          <div class="cap-bar"><div class="cap-bar-fill" id="capE2Bar"></div></div>
+        </div>
+        <div class="cap-entry cap-e3">
+          <div class="cap-glow"></div>
+          <div class="cap-entry-tag">3ª · 55%</div>
+          <div class="cap-entry-lbl">Tercera entrada</div>
+          <div class="cap-entry-num" id="capE3Num">0,00</div>
+          <div class="cap-entry-usdt">USDT</div>
+          <div class="cap-bar"><div class="cap-bar-fill" id="capE3Bar"></div></div>
+        </div>
+      </div>
+
+      <div class="ps-foot" style="margin-top:18px">Posición = 10% del capital · Entradas = % de la posición</div>
+    </div>
+
+    <div id="capEmpty" class="cap-empty">
+      <svg width="36" height="36" viewBox="0 0 24 24" stroke="var(--text-3)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 000 4h4a2 2 0 010 4H8"/>
+        <line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/>
+      </svg>
+      <p>Introduce el capital de tu cuenta</p>
+    </div>
+  </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1514,6 +1630,77 @@ function psCalc(){
 ['ps1','ps2','ps3','psSlider'].forEach(id=>$(id).addEventListener('input',psCalc));
 document.querySelectorAll('.ps-quick-btn').forEach(btn=>btn.addEventListener('click',()=>{$('psSlider').value=btn.dataset.val;psCalc();}));
 psUpdateFill();psUpdateBtns();
+
+/* ═══════════════════════════════════════════════════════════
+   CAPITAL MANAGEMENT
+   ═══════════════════════════════════════════════════════════ */
+(function(){
+  const capInput=$('capInput');
+  const capResults=$('capResults');
+  const capEmpty=$('capEmpty');
+  const capPosNum=$('capPosNum');
+  const capPosSub=$('capPosSub');
+  const capE1Num=$('capE1Num');
+  const capE2Num=$('capE2Num');
+  const capE3Num=$('capE3Num');
+  const capE1Bar=$('capE1Bar');
+  const capE2Bar=$('capE2Bar');
+  const capE3Bar=$('capE3Bar');
+  let prevPos=0,prevE1=0,prevE2=0,prevE3=0,capShown=false;
+
+  function capCount(el,from,to,ms){
+    ms=ms||600;
+    if(el._raf)cancelAnimationFrame(el._raf);
+    const t0=performance.now();
+    function step(t){
+      const p=Math.min((t-t0)/ms,1);
+      const ease=1-(1-p)*(1-p)*(1-p);
+      el.textContent=psFmt(from+(to-from)*ease);
+      if(p<1)el._raf=requestAnimationFrame(step);
+      else{el.textContent=psFmt(to);el._raf=null;}
+    }
+    el._raf=requestAnimationFrame(step);
+  }
+
+  function capCalc(){
+    const cap=parseFloat(capInput.value)||0;
+    if(cap<=0){
+      capResults.style.display='none';
+      capEmpty.style.display='';
+      capE1Bar.style.width='0';capE2Bar.style.width='0';capE3Bar.style.width='0';
+      capShown=false;
+      prevPos=prevE1=prevE2=prevE3=0;
+      return;
+    }
+    const wasHidden=!capShown;
+    capResults.style.display='block';
+    capEmpty.style.display='none';
+    capShown=true;
+
+    const pos=cap*0.10;
+    const e1=pos*0.15;
+    const e2=pos*0.30;
+    const e3=pos*0.55;
+
+    capCount(capPosNum,prevPos,pos);
+    capCount(capE1Num,prevE1,e1);
+    capCount(capE2Num,prevE2,e2);
+    capCount(capE3Num,prevE3,e3);
+    capPosSub.textContent=psFmt(cap)+' USDT de capital';
+
+    if(wasHidden){
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        capE1Bar.style.width='27.3%';
+        capE2Bar.style.width='54.5%';
+        capE3Bar.style.width='100%';
+      }));
+    }
+
+    prevPos=pos;prevE1=e1;prevE2=e2;prevE3=e3;
+  }
+
+  capInput.addEventListener('input',capCalc);
+})();
 
 /* ── Migrate old versions ─────────────────────────────────── */
 const SK='trading-journal-v3';
