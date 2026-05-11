@@ -2348,6 +2348,14 @@ psUpdateFill();psUpdateBtns();
     if(e.target.closest('.cap-op-chip-del'))deleteOp(id);
     else loadOp(id);
   });
+
+  $('capSyncBtn').addEventListener('click',()=>{
+    const code=$('capSyncInput').value.trim();
+    if(!code)return;
+    localStorage.setItem(UID_KEY,code);
+    location.reload();
+  });
+  $('capSyncInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('capSyncBtn').click();});
 })();
 
 /* ── Migrate old versions ─────────────────────────────────── */
