@@ -76,6 +76,10 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .toggle-track{width:40px;height:22px;border-radius:11px;background:var(--border);position:relative;transition:background .3s;flex-shrink:0}
 .toggle-track::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--text-2);transition:all .3s cubic-bezier(.16,1,.3,1)}
 .toggle-track.on{background:var(--green)}.toggle-track.on::after{left:21px;background:#fff}
+.theme-seg{display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px;flex-shrink:0}
+.theme-seg-btn{padding:5px 10px;border:none;background:transparent;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);cursor:pointer;border-radius:6px;transition:all .2s;-webkit-tap-highlight-color:transparent;letter-spacing:.5px}
+.theme-seg-btn:hover:not(.active){color:var(--text-2)}
+.theme-seg-btn.active{background:var(--green-d);color:var(--green);box-shadow:0 0 0 1px var(--green-s)}
 
 /* ────── COMMON sections ────── */
 .sec{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:2.5px;margin:24px 0 12px}.sec::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
@@ -569,6 +573,28 @@ body.light .cal-day.g1{background:#08a86c30}body.light .cal-day.g2{background:#0
 body.light .cal-day.r1{background:#d42e4a30}body.light .cal-day.r2{background:#d42e4a55}body.light .cal-day.r3{background:#d42e4a88}body.light .cal-day.r4{background:#d42e4acc}
 body.light .cal-day.neutral{background:#d8dcd8}
 
+/* ═══════════════════════════════════════════════════════════
+   MATRIX THEME — alto contraste, verde y negro
+   ═══════════════════════════════════════════════════════════ */
+body.matrix{
+  --bg:#000000;--bg-card:#040d06;--bg-card-hover:#091808;--bg-input:#020608;
+  --border:#163d1c;--border-glow:#267a32;--border-focus:#00e676;
+  --text-1:#f0fff4;--text-2:#52c97a;--text-3:#236638;
+  --green:#00e676;--green-bright:#39ff8f;--green-d:rgba(0,230,118,.13);--green-s:rgba(0,230,118,.4);
+  --green-dim:rgba(0,230,118,.18);
+  --amber:#ffe566;--amber-d:rgba(255,229,102,.12);
+  --rose:#ff3355;--rose-d:rgba(255,51,85,.12);--rose-s:rgba(255,51,85,.4);
+  --cyan:#00e676;--cyan-d:rgba(0,230,118,.13);
+}
+body.matrix::before{background:linear-gradient(90deg,rgba(0,230,118,.055) 1px,transparent 1px),linear-gradient(rgba(0,230,118,.055) 1px,transparent 1px);background-size:28px 28px}
+body.matrix::after{background:radial-gradient(ellipse at 20% 20%,rgba(0,230,118,.1) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(0,255,136,.07) 0%,transparent 50%)}
+body.matrix .nav-drop{box-shadow:0 8px 40px rgba(0,0,0,.98),0 0 0 1px rgba(0,230,118,.12)}
+body.matrix .submit-btn,body.matrix .sync-main-btn,body.matrix .tab-btn.active{color:#000}
+body.matrix .cl-checkbox svg,body.matrix .cs-box svg{stroke:#000}
+body.matrix .cal-day.g1{background:rgba(0,230,118,.25)}body.matrix .cal-day.g2{background:rgba(0,230,118,.45)}body.matrix .cal-day.g3{background:rgba(0,230,118,.68)}body.matrix .cal-day.g4{background:rgba(0,230,118,.9)}
+body.matrix .cal-day.r1{background:rgba(255,51,85,.25)}body.matrix .cal-day.r2{background:rgba(255,51,85,.45)}body.matrix .cal-day.r3{background:rgba(255,51,85,.68)}body.matrix .cal-day.r4{background:rgba(255,51,85,.9)}
+body.matrix .cal-day.neutral{background:#163d1c}
+
 @media(max-width:500px){
   .container{padding:18px 10px 40px}
   .app-title{font-size:20px}
@@ -962,9 +988,13 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
 <!-- ────── HAMBURGER NAV ────── -->
 <div class="nav-ham" id="navHam"><span></span></div>
 <div class="nav-drop" id="navDrop">
-  <div class="theme-row" id="themeToggle">
-    <span class="theme-row-label"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>Modo claro</span>
-    <div class="toggle-track" id="themeTrack"></div>
+  <div class="theme-row">
+    <span class="theme-row-label"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>Tema</span>
+    <div class="theme-seg" id="themeSeg">
+      <button class="theme-seg-btn" data-theme="dark">Oscuro</button>
+      <button class="theme-seg-btn" data-theme="matrix">Matrix</button>
+      <button class="theme-seg-btn" data-theme="light">Claro</button>
+    </div>
   </div>
 </div>
 
@@ -1653,9 +1683,15 @@ if(savedTab&&document.querySelector(`[data-tab="${savedTab}"]`))setTab(savedTab)
 /* ═══════════════════════════════════════════════════════════
    THEME + NAV
    ═══════════════════════════════════════════════════════════ */
-function applyTheme(l){document.body.classList.toggle('light',l);$('themeTrack').classList.toggle('on',l);localStorage.setItem('theme',l?'light':'dark');}
-$('themeToggle').addEventListener('click',()=>applyTheme(!document.body.classList.contains('light')));
-if(localStorage.getItem('theme')==='light')applyTheme(true);
+function applyTheme(t){
+  document.body.classList.remove('light','matrix');
+  if(t==='light')document.body.classList.add('light');
+  else if(t==='matrix')document.body.classList.add('matrix');
+  localStorage.setItem('theme',t);
+  document.querySelectorAll('.theme-seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===t));
+}
+document.querySelectorAll('.theme-seg-btn').forEach(b=>b.addEventListener('click',()=>applyTheme(b.dataset.theme)));
+applyTheme(localStorage.getItem('theme')||'dark');
 
 $('navHam').addEventListener('click',function(e){e.stopPropagation();this.classList.toggle('open');$('navDrop').classList.toggle('open');});
 document.addEventListener('click',e=>{if(!e.target.closest('#navHam')&&!e.target.closest('#navDrop')){$('navHam').classList.remove('open');$('navDrop').classList.remove('open');}});
