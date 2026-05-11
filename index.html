@@ -449,6 +449,34 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .cap-avg-unit{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--green);opacity:.6}
 .cap-avg-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:.5px}
 
+.cap-lev-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px}
+.cap-lev-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;display:block}
+.cap-lev-input-wrap{position:relative;margin-bottom:10px}
+.cap-lev-input-wrap input{width:100%;background:var(--bg-input);border:1.5px solid var(--border);border-radius:9px;padding:11px 42px 11px 14px;font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--text-1);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.cap-lev-input-wrap input:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-d)}
+.cap-lev-input-wrap input::placeholder{color:var(--text-3)}
+.cap-lev-input-wrap .cap-punit{right:14px;font-size:14px;color:var(--amber);font-weight:700}
+.cap-lev-quick{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.cap-lev-btn{padding:8px 4px;border:1.5px solid var(--border);border-radius:8px;background:transparent;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--text-3);cursor:pointer;transition:all .25s;-webkit-tap-highlight-color:transparent}
+.cap-lev-btn:hover{border-color:var(--amber);color:var(--amber)}
+.cap-lev-btn.active{border-color:var(--amber);color:var(--amber);background:var(--amber-d)}
+
+.cap-sl-card{position:relative;background:var(--bg-card);border:1.5px solid #ea394328;border-radius:16px;padding:20px;overflow:hidden;transition:all .35s}
+.cap-sl-card:hover{border-color:#ea394345;box-shadow:0 0 28px #ea394312}
+.cap-sl-card .cap-glow{top:-50%;right:-10%;width:220px;height:220px;background:radial-gradient(circle,var(--rose) 0%,transparent 70%)}
+.cap-sl-badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--rose);background:var(--rose-d);border:1px solid #ea394330;padding:3px 10px;border-radius:100px;margin-bottom:12px}
+.cap-sl-pct-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:.5px;margin-bottom:6px}
+.cap-sl-pct{font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:800;color:var(--rose);line-height:1;letter-spacing:-1.5px}
+.cap-sl-pct-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);margin-top:6px;letter-spacing:.3px}
+.cap-sl-sep{height:1px;background:var(--border);margin:16px 0}
+.cap-sl-price-list{display:flex;flex-direction:column;gap:8px}
+.cap-sl-row{display:flex;align-items:center;gap:10px;background:var(--bg-card-hover);border-radius:10px;padding:10px 12px}
+.cap-sl-dir{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:6px;flex-shrink:0;white-space:nowrap}
+.cap-sl-dir.long{background:#16c78420;color:var(--green);border:1px solid #16c78430}
+.cap-sl-dir.short{background:var(--rose-d);color:var(--rose);border:1px solid #ea394330}
+.cap-sl-price{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--text-1);flex:1;text-align:right}
+.cap-sl-pusdt{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);flex-shrink:0;width:32px;text-align:right}
+
 /* ═══════════════════════════════════════════════════════════
    LIGHT THEME
    ═══════════════════════════════════════════════════════════ */
@@ -1435,6 +1463,50 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
       </div>
 
       <div class="ps-foot" style="margin-top:14px">Precio medio ponderado por el tamaño de cada entrada</div>
+
+      <div class="ps-divider"></div>
+      <div class="sec">Apalancamiento y Stop Loss</div>
+
+      <div class="cap-lev-wrap">
+        <span class="cap-lev-lbl">Apalancamiento</span>
+        <div class="cap-lev-input-wrap">
+          <input type="number" inputmode="decimal" id="capLev" placeholder="1" min="1" max="125">
+          <span class="cap-punit">×</span>
+        </div>
+        <div class="cap-lev-quick">
+          <button class="cap-lev-btn" data-lev="2">2×</button>
+          <button class="cap-lev-btn" data-lev="3">3×</button>
+          <button class="cap-lev-btn" data-lev="5">5×</button>
+          <button class="cap-lev-btn" data-lev="10">10×</button>
+          <button class="cap-lev-btn" data-lev="20">20×</button>
+          <button class="cap-lev-btn" data-lev="50">50×</button>
+        </div>
+      </div>
+
+      <div id="capSlCard" class="cap-sl-card" style="display:none;margin-top:10px">
+        <div class="cap-glow"></div>
+        <div class="cap-sl-badge">SL máximo · 2% del capital</div>
+        <div class="cap-sl-pct-lbl">Distancia máxima del precio de entrada</div>
+        <div class="cap-sl-pct" id="capSlPct">0,00%</div>
+        <div class="cap-sl-pct-sub" id="capSlPctSub"></div>
+        <div id="capSlPricesWrap" style="display:none">
+          <div class="cap-sl-sep"></div>
+          <div class="cap-sl-price-list">
+            <div class="cap-sl-row">
+              <span class="cap-sl-dir long">LONG ↓</span>
+              <span class="cap-sl-price" id="capSlLong">—</span>
+              <span class="cap-sl-pusdt">USDT</span>
+            </div>
+            <div class="cap-sl-row">
+              <span class="cap-sl-dir short">SHORT ↑</span>
+              <span class="cap-sl-price" id="capSlShort">—</span>
+              <span class="cap-sl-pusdt">USDT</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ps-foot" style="margin-top:14px">Máxima pérdida permitida: 2% del capital total de la cuenta</div>
     </div>
 
     <div id="capEmpty" class="cap-empty">
@@ -1737,9 +1809,16 @@ psUpdateFill();psUpdateBtns();
   const capAvgCard=$('capAvgCard');
   const capAvgNum=$('capAvgNum');
   const capAvgSub=$('capAvgSub');
+  const capLev=$('capLev');
+  const capSlCard=$('capSlCard');
+  const capSlPct=$('capSlPct');
+  const capSlPctSub=$('capSlPctSub');
+  const capSlPricesWrap=$('capSlPricesWrap');
+  const capSlLong=$('capSlLong');
+  const capSlShort=$('capSlShort');
 
   let prevPos=0,prevE1=0,prevE2=0,prevE3=0,capShown=false;
-  let curE1=0,curE2=0,curE3=0,prevAvg=0;
+  let curE1=0,curE2=0,curE3=0,curCap=0,curAvg=0,prevAvg=0,prevSlPct=0;
 
   function fmtPrice(n){
     if(n===0)return psFmt(0);
@@ -1761,6 +1840,35 @@ psUpdateFill();psUpdateBtns();
     el._raf=requestAnimationFrame(step);
   }
 
+  function slCalc(){
+    const lev=parseFloat(capLev.value)||0;
+    document.querySelectorAll('.cap-lev-btn').forEach(b=>
+      b.classList.toggle('active',parseFloat(b.dataset.lev)===lev));
+    if(lev<=0||curCap<=0){capSlCard.style.display='none';return;}
+    // % move from entry that wipes 2% of total capital
+    // maxLoss = cap*0.02 | pos = cap*0.10 | contracts = pos*lev/avgPrice
+    // movePct = maxLoss/(pos*lev) = (cap*0.02)/(cap*0.10*lev) = 0.2/lev
+    const movePct=(0.2/lev)*100;
+    const wasHidden=capSlCard.style.display==='none';
+    capSlCard.style.display='block';
+    if(wasHidden){
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        capCount(capSlPct,0,movePct,500,v=>fmtPrice(v)+'%');
+      }));
+    } else {
+      capCount(capSlPct,prevSlPct,movePct,350,v=>fmtPrice(v)+'%');
+    }
+    capSlPctSub.textContent='Con '+lev+'× · pérdida = '+psFmt(curCap*0.02)+' USDT (2% del capital)';
+    if(curAvg>0){
+      capSlPricesWrap.style.display='block';
+      capSlLong.textContent=fmtPrice(curAvg*(1-0.2/lev));
+      capSlShort.textContent=fmtPrice(curAvg*(1+0.2/lev));
+    } else {
+      capSlPricesWrap.style.display='none';
+    }
+    prevSlPct=movePct;
+  }
+
   function avgCalc(){
     const p1=parseFloat(capPr1.value)||0;
     const p2=parseFloat(capPr2.value)||0;
@@ -1769,7 +1877,12 @@ psUpdateFill();psUpdateBtns();
     if(p1>0&&curE1>0)entries.push({p:p1,a:curE1});
     if(p2>0&&curE2>0)entries.push({p:p2,a:curE2});
     if(p3>0&&curE3>0)entries.push({p:p3,a:curE3});
-    if(!entries.length){capAvgCard.style.display='none';prevAvg=0;return;}
+    if(!entries.length){
+      capAvgCard.style.display='none';
+      curAvg=0;prevAvg=0;
+      slCalc();
+      return;
+    }
     const totalAmt=entries.reduce((s,x)=>s+x.a,0);
     const totalCoins=entries.reduce((s,x)=>s+x.a/x.p,0);
     const avg=totalAmt/totalCoins;
@@ -1782,7 +1895,8 @@ psUpdateFill();psUpdateBtns();
     }
     const label=entries.length===1?'1 entrada':entries.length+' entradas';
     capAvgSub.textContent='Basado en '+label+' · '+psFmt(totalAmt)+' USDT totales';
-    prevAvg=avg;
+    curAvg=avg;prevAvg=avg;
+    slCalc();
   }
 
   function capCalc(){
@@ -1791,15 +1905,17 @@ psUpdateFill();psUpdateBtns();
       capResults.style.display='none';
       capEmpty.style.display='';
       capE1Bar.style.width='0';capE2Bar.style.width='0';capE3Bar.style.width='0';
-      capShown=false;curE1=curE2=curE3=0;
-      prevPos=prevE1=prevE2=prevE3=prevAvg=0;
+      capShown=false;curE1=curE2=curE3=curCap=curAvg=0;
+      prevPos=prevE1=prevE2=prevE3=prevAvg=prevSlPct=0;
       capAvgCard.style.display='none';
+      capSlCard.style.display='none';
       return;
     }
     const wasHidden=!capShown;
     capResults.style.display='block';
     capEmpty.style.display='none';
     capShown=true;
+    curCap=cap;
 
     const pos=cap*0.10;
     const e1=pos*0.15;
@@ -1830,6 +1946,10 @@ psUpdateFill();psUpdateBtns();
 
   capInput.addEventListener('input',capCalc);
   [capPr1,capPr2,capPr3].forEach(inp=>inp.addEventListener('input',avgCalc));
+  capLev.addEventListener('input',slCalc);
+  document.querySelectorAll('.cap-lev-btn').forEach(b=>b.addEventListener('click',()=>{
+    capLev.value=b.dataset.lev;slCalc();
+  }));
 })();
 
 /* ── Migrate old versions ─────────────────────────────────── */
