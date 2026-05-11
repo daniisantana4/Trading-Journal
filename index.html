@@ -2302,7 +2302,7 @@ psUpdateFill();psUpdateBtns();
     if(cap<=0){
       capResults.style.display='none';capEmpty.style.display='';
       capE1Bar.style.width='0';capE2Bar.style.width='0';capE3Bar.style.width='0';
-      capShown=false;curE1=curE2=curE3=curCap=curPos=curAvg=curRemaining=0;
+      capShown=false;curE1=curE2=curE3=curCap=curPos=curAvg=curRemaining=hitAvg=hitPos=0;
       prevPos=prevE1=prevE2=prevE3=prevAvg=prevSlPct=0;
       capAvgCard.style.display='none';capSlCard.style.display='none';
       return;
@@ -2409,14 +2409,14 @@ psUpdateFill();psUpdateBtns();
     return rows.map(row=>({id:row.id,name:row.name,...row.data}));
   }
   function opToRow(op){
-    return{user_id:SB_UID,name:op.name,data:{capital:op.capital,pr1:op.pr1,pr2:op.pr2,pr3:op.pr3,lev:op.lev,tps:op.tps,savedAt:op.savedAt}};
+    return{user_id:SB_UID,name:op.name,data:{capital:op.capital,pr1:op.pr1,pr2:op.pr2,pr3:op.pr3,lev:op.lev,dir:op.dir,e1Hit:op.e1Hit,e2Hit:op.e2Hit,e3Hit:op.e3Hit,tps:op.tps,savedAt:op.savedAt}};
   }
   async function dbInsert(op){
     const r=await sbFetch('/rest/v1/operations',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify(opToRow(op))});
     const rows=await r.json();return rows[0].id;
   }
   async function dbUpdate(id,op){
-    await sbFetch('/rest/v1/operations?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({name:op.name,data:{capital:op.capital,pr1:op.pr1,pr2:op.pr2,pr3:op.pr3,lev:op.lev,tps:op.tps,savedAt:op.savedAt},updated_at:new Date().toISOString()})});
+    await sbFetch('/rest/v1/operations?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({name:op.name,data:{capital:op.capital,pr1:op.pr1,pr2:op.pr2,pr3:op.pr3,lev:op.lev,dir:op.dir,e1Hit:op.e1Hit,e2Hit:op.e2Hit,e3Hit:op.e3Hit,tps:op.tps,savedAt:op.savedAt},updated_at:new Date().toISOString()})});
   }
   async function dbDelete(id){
     await sbFetch('/rest/v1/operations?id=eq.'+id,{method:'DELETE'});
