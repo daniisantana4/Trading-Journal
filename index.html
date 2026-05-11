@@ -1935,7 +1935,7 @@ psUpdateFill();psUpdateBtns();
       const pct=tp.pct>0&&tp.pct<=100?tp.pct:0;
       const close=before*(pct/100);
       const after=before-close;
-      if(tp.hit)rem=after;
+      rem=after;
       return{before,close,after,pct};
     });
   }
