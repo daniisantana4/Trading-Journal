@@ -505,6 +505,29 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .cap-tp-add-btn{width:100%;padding:12px;background:transparent;border:1.5px dashed var(--border);border-radius:12px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--text-3);cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
 .cap-tp-add-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-d)}
 
+.cap-ops-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.cap-ops-save-row{display:flex;gap:8px;padding:12px}
+.cap-op-name-input{flex:1;min-width:0;background:var(--bg-input);border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;color:var(--text-1);outline:none;transition:border-color .2s}
+.cap-op-name-input:focus{border-color:var(--green)}
+.cap-op-name-input::placeholder{color:var(--text-3)}
+.cap-op-save-btn{padding:9px 13px;background:var(--green);border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:#050807;cursor:pointer;transition:all .25s;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;gap:5px}
+.cap-op-save-btn:hover{background:var(--green-bright)}
+.cap-op-new-btn{padding:9px 12px;background:transparent;border:1.5px solid var(--border);border-radius:9px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;transition:all .25s;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;gap:5px}
+.cap-op-new-btn:hover{border-color:var(--border-glow);color:var(--text-1)}
+.cap-ops-list{display:flex;flex-direction:column}
+.cap-op-chip{display:flex;align-items:center;gap:8px;padding:11px 12px;border-top:1px solid var(--border);-webkit-tap-highlight-color:transparent;transition:background .2s}
+.cap-op-chip.active{background:var(--green-d)}
+.cap-op-chip-info{flex:1;min-width:0;cursor:pointer}
+.cap-op-chip-name{font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--text-1);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .2s}
+.cap-op-chip.active .cap-op-chip-name{color:var(--green)}
+.cap-op-chip-meta{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-3);letter-spacing:.3px;margin-top:2px;display:block}
+.cap-op-chip-load{padding:5px 10px;background:transparent;border:1px solid var(--border);border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-2);cursor:pointer;transition:all .2s;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.cap-op-chip.active .cap-op-chip-load{border-color:#16c78440;color:var(--green)}
+.cap-op-chip-load:hover{border-color:var(--green);color:var(--green)}
+.cap-op-chip-del{background:none;border:none;cursor:pointer;color:var(--text-3);display:flex;align-items:center;padding:5px;border-radius:6px;transition:all .2s;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.cap-op-chip-del:hover{color:var(--rose);background:var(--rose-d)}
+.cap-ops-empty{padding:14px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);text-align:center;letter-spacing:.5px;border-top:1px solid var(--border)}
+
 /* ═══════════════════════════════════════════════════════════
    LIGHT THEME
    ═══════════════════════════════════════════════════════════ */
@@ -1385,6 +1408,21 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
       <div class="tab-header-sub">Calcula tu posición y entradas escalonadas</div>
     </div>
 
+    <div class="cap-ops-panel">
+      <div class="cap-ops-save-row">
+        <input type="text" id="capOpName" class="cap-op-name-input" placeholder="Nombre de la operación..." maxlength="50" autocomplete="off">
+        <button id="capOpSave" class="cap-op-save-btn">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Guardar
+        </button>
+        <button id="capOpNew" class="cap-op-new-btn">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva
+        </button>
+      </div>
+      <div id="capOpsList" class="cap-ops-list"></div>
+    </div>
+
     <div class="sec anim a1">Capital disponible</div>
 
     <div class="ps-field anim a2">
@@ -2080,6 +2118,123 @@ psUpdateFill();psUpdateBtns();
       tp.pct=parseFloat(e.target.value)||0;
       updateTpInfo();
     }
+  });
+
+  // ── Operaciones abiertas ──────────────────────────────────
+  const OPS_KEY='hub_cap_ops';
+  let ops=[],activeOpId=null;
+
+  function opToast(msg,type){
+    const t=$('toast');t.textContent=msg;
+    t.className='toast '+(type||'success');t.classList.add('show');
+    clearTimeout(t._to);t._to=setTimeout(()=>t.classList.remove('show'),2500);
+  }
+  function loadOpsStore(){
+    try{ops=JSON.parse(localStorage.getItem(OPS_KEY))||[];}catch(e){ops=[];}
+  }
+  function saveOpsStore(){localStorage.setItem(OPS_KEY,JSON.stringify(ops));}
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  function getCurrentState(){
+    return{
+      capital:capInput.value,
+      pr1:capPr1.value,pr2:capPr2.value,pr3:capPr3.value,
+      lev:capLev.value,
+      tps:tps.map(t=>({id:t.id,price:t.price,pct:t.pct,hit:t.hit}))
+    };
+  }
+
+  function applyState(state){
+    tps=(state.tps||[]).map(t=>({...t}));
+    tpIdCtr=tps.length?Math.max(...tps.map(t=>t.id)):0;
+    capInput.value=state.capital||'';
+    capPr1.value=state.pr1||'';capPr2.value=state.pr2||'';capPr3.value=state.pr3||'';
+    capLev.value=state.lev||'';
+    capCalc();
+  }
+
+  function renderOpsList(){
+    const el=$('capOpsList');
+    if(!ops.length){
+      el.innerHTML='<div class="cap-ops-empty">Sin operaciones guardadas · Guarda una para recuperarla</div>';
+      return;
+    }
+    el.innerHTML=ops.map(op=>{
+      const active=op.id===activeOpId;
+      const tpHit=(op.tps||[]).filter(t=>t.hit).length;
+      const tpTotal=(op.tps||[]).length;
+      const date=new Date(op.savedAt).toLocaleDateString('es-ES',{day:'2-digit',month:'short'});
+      const parts=[date];
+      if(op.capital)parts.push(psFmt(parseFloat(op.capital)||0)+' USDT');
+      if(op.lev)parts.push(op.lev+'×');
+      if(tpTotal)parts.push(tpHit+'/'+tpTotal+' TPs');
+      return`<div class="cap-op-chip${active?' active':''}" data-opid="${op.id}">
+        <div class="cap-op-chip-info">
+          <span class="cap-op-chip-name">${esc(op.name||'Sin nombre')}</span>
+          <span class="cap-op-chip-meta">${parts.join(' · ')}</span>
+        </div>
+        <button class="cap-op-chip-load">${active?'Activa':'Cargar'}</button>
+        <button class="cap-op-chip-del" title="Finalizar operación">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>`;
+    }).join('');
+  }
+
+  function saveCurrentOp(){
+    const nameInp=$('capOpName');
+    const name=nameInp.value.trim()||'Operación '+new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    nameInp.value=name;
+    const state=getCurrentState();
+    if(activeOpId){
+      const op=ops.find(o=>o.id===activeOpId);
+      if(op)Object.assign(op,state,{name,savedAt:new Date().toISOString()});
+      else{const n={id:Date.now(),name,...state,savedAt:new Date().toISOString()};ops.push(n);activeOpId=n.id;}
+    }else{
+      const n={id:Date.now(),name,...state,savedAt:new Date().toISOString()};
+      ops.push(n);activeOpId=n.id;
+    }
+    saveOpsStore();renderOpsList();
+    opToast('Operación guardada','success');
+  }
+
+  function loadOp(id){
+    const op=ops.find(o=>o.id===id);if(!op)return;
+    activeOpId=id;
+    $('capOpName').value=op.name||'';
+    capShown=false;
+    applyState(op);
+    renderOpsList();
+    opToast('Operación cargada','success');
+  }
+
+  function deleteOp(id){
+    const wasActive=activeOpId===id;
+    ops=ops.filter(o=>o.id!==id);
+    if(wasActive){activeOpId=null;$('capOpName').value='';}
+    saveOpsStore();renderOpsList();
+    opToast('Operación finalizada','success');
+  }
+
+  function clearAll(){
+    activeOpId=null;$('capOpName').value='';
+    tps=[];tpIdCtr=0;
+    capInput.value='';capPr1.value='';capPr2.value='';capPr3.value='';capLev.value='';
+    capShown=false;capCalc();renderOpsList();
+  }
+
+  // Init
+  loadOpsStore();renderOpsList();
+
+  $('capOpSave').addEventListener('click',saveCurrentOp);
+  $('capOpNew').addEventListener('click',clearAll);
+  $('capOpName').addEventListener('keydown',e=>{if(e.key==='Enter')saveCurrentOp();});
+
+  $('capOpsList').addEventListener('click',e=>{
+    const chip=e.target.closest('.cap-op-chip');if(!chip)return;
+    const id=parseInt(chip.dataset.opid);
+    if(e.target.closest('.cap-op-chip-del'))deleteOp(id);
+    else loadOp(id);
   });
 })();
 
