@@ -502,6 +502,11 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .cap-tp-hit-btn{width:100%;padding:11px;background:transparent;border:none;border-top:1px solid var(--border);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:var(--text-3);cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
 .cap-tp-hit-btn:hover{background:var(--green-d);color:var(--green)}
 .cap-tp-hit-btn.active{background:var(--green-d);color:var(--green);font-weight:700}
+.cap-tp-pnl-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--border);background:var(--bg-card-hover)}
+.cap-tp-pnl-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1px}
+.cap-tp-pnl-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700}
+.cap-tp-pnl-pos{color:var(--green)}
+.cap-tp-pnl-neg{color:var(--rose)}
 .cap-tp-add-btn{width:100%;padding:12px;background:transparent;border:1.5px dashed var(--border);border-radius:12px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--text-3);cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
 .cap-tp-add-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-d)}
 
@@ -1924,8 +1929,16 @@ psUpdateFill();psUpdateBtns();
   }
 
   // ── TP rendering ──────────────────────────────────────────
+  function calcPnl(tp,s){
+    const lev=parseFloat(capLev.value)||0;
+    if(!tp.price||!curAvg||!lev||!s.close)return null;
+    return s.close*lev*(tp.price-curAvg)/curAvg;
+  }
   function tpCardHTML(tp,i,s){
     const hasInfo=s.pct>0&&curPos>0;
+    const pnl=calcPnl(tp,s);
+    const pnlStr=pnl!==null?(pnl>=0?'+':'')+psFmt(pnl)+' USDT':'—';
+    const pnlCls=pnl!==null?(pnl>=0?'cap-tp-pnl-pos':'cap-tp-pnl-neg'):'';
     return `<div class="cap-tp-card${tp.hit?' hit':''}" data-id="${tp.id}">
       <div class="cap-tp-head">
         <div class="cap-tp-num">TP ${i+1}</div>
@@ -1961,6 +1974,10 @@ psUpdateFill();psUpdateBtns();
           <span class="cap-tp-info-val" id="cap-tp-after-${tp.id}">${hasInfo?psFmt(s.after)+' USDT':'—'}</span>
         </div>
       </div>
+      <div class="cap-tp-pnl-bar" id="cap-tp-pnl-bar-${tp.id}"${pnl===null?' style="display:none"':''}>
+        <span class="cap-tp-pnl-lbl">Profit estimado</span>
+        <span class="cap-tp-pnl-val ${pnlCls}" id="cap-tp-pnl-${tp.id}">${pnlStr}</span>
+      </div>
       <button class="cap-tp-hit-btn${tp.hit?' active':''}">
         <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="${tp.hit?3:2}" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         ${tp.hit?'TP TOCADO':'Marcar como tocado'}
@@ -1982,6 +1999,20 @@ psUpdateFill();psUpdateBtns();
       if(ae)ae.textContent=hasInfo?psFmt(s.after)+' USDT':'—';
     });
     syncRemaining();
+  }
+  function updateTpPnl(){
+    const states=computeTps();
+    tps.forEach((tp,i)=>{
+      const s=states[i];
+      const barEl=document.getElementById('cap-tp-pnl-bar-'+tp.id);
+      const valEl=document.getElementById('cap-tp-pnl-'+tp.id);
+      if(!barEl||!valEl)return;
+      const pnl=calcPnl(tp,s);
+      if(pnl===null){barEl.style.display='none';return;}
+      barEl.style.display='';
+      valEl.textContent=(pnl>=0?'+':'')+psFmt(pnl)+' USDT';
+      valEl.className='cap-tp-pnl-val '+(pnl>=0?'cap-tp-pnl-pos':'cap-tp-pnl-neg');
+    });
   }
   function syncRemaining(){curRemaining=getRemaining();slCalc();}
 
@@ -2021,6 +2052,7 @@ psUpdateFill();psUpdateBtns();
       capSlPricesWrap.style.display='none';
     }
     prevSlPct=movePct;
+    updateTpPnl();
   }
 
   // ── Avg price ─────────────────────────────────────────────
@@ -2114,6 +2146,7 @@ psUpdateFill();psUpdateBtns();
     const tp=tps.find(t=>t.id===id);if(!tp)return;
     if(e.target.classList.contains('cap-tp-price')){
       tp.price=parseFloat(e.target.value)||0;
+      updateTpPnl();
     }else if(e.target.classList.contains('cap-tp-pct')){
       tp.pct=parseFloat(e.target.value)||0;
       updateTpInfo();
