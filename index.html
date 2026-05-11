@@ -432,6 +432,12 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .cap-price-field input{width:130px;background:var(--bg-input);border:1.5px solid var(--border);border-radius:9px;padding:9px 46px 9px 11px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--text-1);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
 .cap-price-field input::placeholder{color:var(--text-3)}
 .cap-punit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);font-weight:600;letter-spacing:.5px;pointer-events:none}
+.cap-entry-hit-btn{width:34px;height:34px;border-radius:9px;border:1.5px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-3);transition:all .2s;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.cap-entry-hit-btn:hover{border-color:var(--border-glow);color:var(--text-2)}
+.cap-pr1 .cap-entry-hit-btn.hit{background:var(--green-d);border-color:var(--green-s);color:var(--green)}
+.cap-pr2 .cap-entry-hit-btn.hit{background:#60a5fa18;border-color:#60a5fa40;color:#60a5fa}
+.cap-pr3 .cap-entry-hit-btn.hit{background:#a78bfa18;border-color:#a78bfa40;color:#a78bfa}
+.cap-price-row.entry-hit{border-color:var(--border-glow)}
 .cap-pr1 .cap-price-dot{background:var(--green)}
 .cap-pr1 .cap-price-tag{color:var(--green)}
 .cap-pr1:has(input:focus){border-color:#16c78442}
@@ -516,6 +522,13 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .cap-tp-pnl-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700}
 .cap-tp-pnl-pos{color:var(--green)}
 .cap-tp-pnl-neg{color:var(--rose)}
+.cap-tp-pnl-hit-bar{display:flex;align-items:center;justify-content:space-between;padding:5px 14px 7px;border-top:1px dashed var(--border)}
+.cap-tp-pnl-hit-bar .cap-tp-pnl-lbl{font-size:8px;opacity:.7}
+.cap-tp-pnl-hit-bar .cap-tp-pnl-val{font-size:12px}
+.cap-tp-total-hit{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(0,230,118,.2)}
+.cap-tp-total-hit-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--green);opacity:.65;letter-spacing:.5px}
+.cap-tp-total-hit-amt{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--green)}
+.cap-tp-total-hit-amt.neg{color:var(--rose)}
 .cap-tp-total{border-radius:14px;padding:20px 20px 18px;text-align:center;margin-bottom:12px;background:linear-gradient(145deg,rgba(0,230,118,.1),rgba(0,230,118,.03));border:1.5px solid rgba(0,230,118,.3);box-shadow:0 0 28px rgba(0,230,118,.08),inset 0 1px 0 rgba(0,230,118,.15);position:relative;overflow:hidden}
 .cap-tp-total::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,230,118,.6),transparent)}
 .cap-tp-total-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:1.5px;opacity:.75;margin-bottom:12px}
@@ -1581,7 +1594,7 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
       <div class="sec">Precio de entradas</div>
 
       <div class="cap-price-inputs">
-        <div class="cap-price-row cap-pr1">
+        <div class="cap-price-row cap-pr1" id="capPrRow1">
           <div class="cap-price-dot"></div>
           <div class="cap-price-meta">
             <span class="cap-price-tag">1ª entrada</span>
@@ -1591,8 +1604,11 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
             <input type="number" inputmode="decimal" id="capPr1" placeholder="0.00">
             <span class="cap-punit">USDT</span>
           </div>
+          <button class="cap-entry-hit-btn" id="capE1Hit" title="Marcar entrada como tocada">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
         </div>
-        <div class="cap-price-row cap-pr2">
+        <div class="cap-price-row cap-pr2" id="capPrRow2">
           <div class="cap-price-dot"></div>
           <div class="cap-price-meta">
             <span class="cap-price-tag">2ª entrada</span>
@@ -1602,8 +1618,11 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
             <input type="number" inputmode="decimal" id="capPr2" placeholder="0.00">
             <span class="cap-punit">USDT</span>
           </div>
+          <button class="cap-entry-hit-btn" id="capE2Hit" title="Marcar entrada como tocada">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
         </div>
-        <div class="cap-price-row cap-pr3">
+        <div class="cap-price-row cap-pr3" id="capPrRow3">
           <div class="cap-price-dot"></div>
           <div class="cap-price-meta">
             <span class="cap-price-tag">3ª entrada</span>
@@ -1613,6 +1632,9 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
             <input type="number" inputmode="decimal" id="capPr3" placeholder="0.00">
             <span class="cap-punit">USDT</span>
           </div>
+          <button class="cap-entry-hit-btn" id="capE3Hit" title="Marcar entrada como tocada">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
         </div>
       </div>
 
@@ -1679,6 +1701,10 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
         <div class="cap-tp-total-lbl">Ganancia total estimada · todos los TPs</div>
         <div id="capTpTotalAmt" class="cap-tp-total-amt">—</div>
         <div id="capTpTotalSub" class="cap-tp-total-sub">—</div>
+        <div id="capTpTotalHit" class="cap-tp-total-hit" style="display:none">
+          <span class="cap-tp-total-hit-lbl">Solo entradas tocadas</span>
+          <span id="capTpTotalHitAmt" class="cap-tp-total-hit-amt">—</span>
+        </div>
       </div>
       <button class="cap-tp-add-btn" id="capTpAdd">
         <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1994,6 +2020,7 @@ psUpdateFill();psUpdateBtns();
   let prevPos=0,prevE1=0,prevE2=0,prevE3=0,capShown=false;
   let curE1=0,curE2=0,curE3=0,curCap=0,curPos=0,curAvg=0,prevAvg=0,prevSlPct=0;
   let curRemaining=0,curDir='long';
+  let e1Hit=false,e2Hit=false,e3Hit=false,hitAvg=0,hitPos=0;
   let tps=[],tpIdCtr=0;
 
   // ── Helpers ───────────────────────────────────────────────
@@ -2035,6 +2062,29 @@ psUpdateFill();psUpdateBtns();
   }
 
   // ── TP rendering ──────────────────────────────────────────
+  function updateEntryHit(){
+    [[e1Hit,'capE1Hit','capPrRow1'],[e2Hit,'capE2Hit','capPrRow2'],[e3Hit,'capE3Hit','capPrRow3']].forEach(([hit,btnId,rowId])=>{
+      $(btnId).classList.toggle('hit',hit);
+      $(rowId).classList.toggle('entry-hit',hit);
+    });
+  }
+  function computeHitTps(){
+    let rem=hitPos;
+    return tps.map(tp=>{
+      const before=rem;
+      const pct=tp.pct>0&&tp.pct<=100?tp.pct:0;
+      const close=before*(pct/100);
+      const after=before-close;
+      rem=after;
+      return{before,close,after,pct};
+    });
+  }
+  function calcHitPnl(tp,s){
+    const lev=parseFloat(capLev.value)||0;
+    if(!tp.price||!hitAvg||!lev||!s.close)return null;
+    const diff=curDir==='long'?tp.price-hitAvg:hitAvg-tp.price;
+    return s.close*lev*diff/hitAvg;
+  }
   function setDir(d){
     curDir=d;
     capDirLong.className='cap-dir-btn'+(d==='long'?' active-long':'');
@@ -2091,6 +2141,10 @@ psUpdateFill();psUpdateBtns();
         <span class="cap-tp-pnl-lbl">Profit estimado</span>
         <span class="cap-tp-pnl-val ${pnlCls}" id="cap-tp-pnl-${tp.id}">${pnlStr}</span>
       </div>
+      <div class="cap-tp-pnl-hit-bar" id="cap-tp-pnl-hit-bar-${tp.id}" style="display:none">
+        <span class="cap-tp-pnl-lbl">Solo entradas tocadas</span>
+        <span class="cap-tp-pnl-val" id="cap-tp-pnl-hit-${tp.id}">—</span>
+      </div>
       <button class="cap-tp-hit-btn${tp.hit?' active':''}">
         <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="${tp.hit?3:2}" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         ${tp.hit?'TP TOCADO':'Marcar como tocado'}
@@ -2115,18 +2169,34 @@ psUpdateFill();psUpdateBtns();
   }
   function updateTpPnl(){
     const states=computeTps();
-    let total=0,counted=0;
+    const hitStates=computeHitTps();
+    let total=0,counted=0,hitTotal=0,hitCounted=0;
     tps.forEach((tp,i)=>{
       const s=states[i];
       const barEl=document.getElementById('cap-tp-pnl-bar-'+tp.id);
       const valEl=document.getElementById('cap-tp-pnl-'+tp.id);
-      if(!barEl||!valEl)return;
-      const pnl=calcPnl(tp,s);
-      if(pnl===null){barEl.style.display='none';return;}
-      barEl.style.display='';
-      valEl.textContent=(pnl>=0?'+':'')+psFmt(pnl)+' USDT';
-      valEl.className='cap-tp-pnl-val '+(pnl>=0?'cap-tp-pnl-pos':'cap-tp-pnl-neg');
-      total+=pnl;counted++;
+      if(barEl&&valEl){
+        const pnl=calcPnl(tp,s);
+        if(pnl===null){barEl.style.display='none';}
+        else{
+          barEl.style.display='';
+          valEl.textContent=(pnl>=0?'+':'')+psFmt(pnl)+' USDT';
+          valEl.className='cap-tp-pnl-val '+(pnl>=0?'cap-tp-pnl-pos':'cap-tp-pnl-neg');
+          total+=pnl;counted++;
+        }
+      }
+      const hitBarEl=document.getElementById('cap-tp-pnl-hit-bar-'+tp.id);
+      const hitValEl=document.getElementById('cap-tp-pnl-hit-'+tp.id);
+      if(hitBarEl&&hitValEl){
+        const hitPnl=hitPos>0?calcHitPnl(tp,hitStates[i]):null;
+        if(hitPnl===null){hitBarEl.style.display='none';}
+        else{
+          hitBarEl.style.display='';
+          hitValEl.textContent=(hitPnl>=0?'+':'')+psFmt(hitPnl)+' USDT';
+          hitValEl.className='cap-tp-pnl-val '+(hitPnl>=0?'cap-tp-pnl-pos':'cap-tp-pnl-neg');
+          hitTotal+=hitPnl;hitCounted++;
+        }
+      }
     });
     const totalEl=document.getElementById('capTpTotal');
     const amtEl=document.getElementById('capTpTotalAmt');
@@ -2139,6 +2209,16 @@ psUpdateFill();psUpdateBtns();
     const retPct=curCap>0?total/curCap*100:0;
     const tpWord=counted===1?'1 TP':counted+' TPs';
     subEl.textContent='Retorno sobre capital: '+(retPct>=0?'+':'')+fmtPrice(Math.abs(retPct))+'%  ·  '+tpWord+' calculados';
+    const hitTotalEl=document.getElementById('capTpTotalHit');
+    const hitAmtEl=document.getElementById('capTpTotalHitAmt');
+    if(hitTotalEl&&hitAmtEl){
+      if(!hitCounted){hitTotalEl.style.display='none';}
+      else{
+        hitTotalEl.style.display='flex';
+        hitAmtEl.textContent=(hitTotal>=0?'+':'')+psFmt(hitTotal)+' USDT';
+        hitAmtEl.className='cap-tp-total-hit-amt'+(hitTotal<0?' neg':'');
+      }
+    }
   }
   function syncRemaining(){curRemaining=getRemaining();slCalc();}
 
@@ -2193,7 +2273,7 @@ psUpdateFill();psUpdateBtns();
     if(p2>0&&curE2>0)entries.push({p:p2,a:curE2});
     if(p3>0&&curE3>0)entries.push({p:p3,a:curE3});
     if(!entries.length){
-      capAvgCard.style.display='none';curAvg=0;prevAvg=0;syncRemaining();return;
+      capAvgCard.style.display='none';curAvg=0;prevAvg=0;hitAvg=0;hitPos=0;syncRemaining();return;
     }
     const totalAmt=entries.reduce((s,x)=>s+x.a,0);
     const avg=totalAmt/entries.reduce((s,x)=>s+x.a/x.p,0);
@@ -2206,7 +2286,14 @@ psUpdateFill();psUpdateBtns();
     }
     const label=entries.length===1?'1 entrada':entries.length+' entradas';
     capAvgSub.textContent='Basado en '+label+' · '+psFmt(totalAmt)+' USDT totales';
-    curAvg=avg;prevAvg=avg;syncRemaining();
+    curAvg=avg;prevAvg=avg;
+    const he=[];
+    if(e1Hit&&p1>0&&curE1>0)he.push({p:p1,a:curE1});
+    if(e2Hit&&p2>0&&curE2>0)he.push({p:p2,a:curE2});
+    if(e3Hit&&p3>0&&curE3>0)he.push({p:p3,a:curE3});
+    if(he.length){const ha=he.reduce((s,x)=>s+x.a,0);hitAvg=ha/he.reduce((s,x)=>s+x.a/x.p,0);hitPos=ha;}
+    else{hitAvg=0;hitPos=0;}
+    syncRemaining();
   }
 
   // ── Capital ───────────────────────────────────────────────
@@ -2242,6 +2329,9 @@ psUpdateFill();psUpdateBtns();
   // ── Events ────────────────────────────────────────────────
   capDirLong.addEventListener('click',()=>setDir('long'));
   capDirShort.addEventListener('click',()=>setDir('short'));
+  $('capE1Hit').addEventListener('click',()=>{e1Hit=!e1Hit;updateEntryHit();avgCalc();});
+  $('capE2Hit').addEventListener('click',()=>{e2Hit=!e2Hit;updateEntryHit();avgCalc();});
+  $('capE3Hit').addEventListener('click',()=>{e3Hit=!e3Hit;updateEntryHit();avgCalc();});
   capInput.addEventListener('input',capCalc);
   [capPr1,capPr2,capPr3].forEach(inp=>inp.addEventListener('input',avgCalc));
   capLev.addEventListener('input',slCalc);
@@ -2338,6 +2428,7 @@ psUpdateFill();psUpdateBtns();
       pr1:capPr1.value,pr2:capPr2.value,pr3:capPr3.value,
       lev:capLev.value,
       dir:curDir,
+      e1Hit,e2Hit,e3Hit,
       tps:tps.map(t=>({id:t.id,price:t.price,pct:t.pct,hit:t.hit}))
     };
   }
@@ -2348,6 +2439,8 @@ psUpdateFill();psUpdateBtns();
     capInput.value=state.capital||'';
     capPr1.value=state.pr1||'';capPr2.value=state.pr2||'';capPr3.value=state.pr3||'';
     capLev.value=state.lev||'';
+    e1Hit=state.e1Hit||false;e2Hit=state.e2Hit||false;e3Hit=state.e3Hit||false;
+    updateEntryHit();
     setDir(state.dir||'long');
     capCalc();
   }
@@ -2427,6 +2520,7 @@ psUpdateFill();psUpdateBtns();
     activeOpId=null;$('capOpName').value='';
     tps=[];tpIdCtr=0;
     capInput.value='';capPr1.value='';capPr2.value='';capPr3.value='';capLev.value='';
+    e1Hit=false;e2Hit=false;e3Hit=false;hitAvg=0;hitPos=0;updateEntryHit();
     capShown=false;capCalc();renderOpsList();
   }
 
