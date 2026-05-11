@@ -418,6 +418,37 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .cap-empty svg{display:block;margin:0 auto 12px}
 .cap-empty p{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-3);letter-spacing:.5px}
 
+.cap-price-inputs{display:flex;flex-direction:column;gap:8px}
+.cap-price-row{display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:13px;padding:13px 14px;transition:border-color .25s}
+.cap-price-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cap-price-meta{flex:1;min-width:0}
+.cap-price-tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:block}
+.cap-price-amt{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-3);margin-top:2px;letter-spacing:.3px}
+.cap-price-field{position:relative;flex-shrink:0}
+.cap-price-field input{width:130px;background:var(--bg-input);border:1.5px solid var(--border);border-radius:9px;padding:9px 46px 9px 11px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--text-1);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.cap-price-field input::placeholder{color:var(--text-3)}
+.cap-punit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);font-weight:600;letter-spacing:.5px;pointer-events:none}
+.cap-pr1 .cap-price-dot{background:var(--green)}
+.cap-pr1 .cap-price-tag{color:var(--green)}
+.cap-pr1:has(input:focus){border-color:#16c78442}
+.cap-pr1 .cap-price-field input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-d)}
+.cap-pr2 .cap-price-dot{background:#60a5fa}
+.cap-pr2 .cap-price-tag{color:#60a5fa}
+.cap-pr2:has(input:focus){border-color:#60a5fa40}
+.cap-pr2 .cap-price-field input:focus{border-color:#60a5fa;box-shadow:0 0 0 3px #60a5fa18}
+.cap-pr3 .cap-price-dot{background:#a78bfa}
+.cap-pr3 .cap-price-tag{color:#a78bfa}
+.cap-pr3:has(input:focus){border-color:#a78bfa40}
+.cap-pr3 .cap-price-field input:focus{border-color:#a78bfa;box-shadow:0 0 0 3px #a78bfa18}
+
+.cap-avg-card{position:relative;background:var(--bg-card);border:1.5px solid #16c78438;border-radius:16px;padding:20px 20px 18px;overflow:hidden;margin-top:10px;transition:all .35s}
+.cap-avg-card:hover{border-color:var(--green);box-shadow:0 0 28px #16c78412}
+.cap-avg-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-3);margin-bottom:10px}
+.cap-avg-row{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.cap-avg-num{font-family:'JetBrains Mono',monospace;font-size:38px;font-weight:800;color:var(--green);line-height:1;letter-spacing:-1.5px}
+.cap-avg-unit{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--green);opacity:.6}
+.cap-avg-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:.5px}
+
 /* ═══════════════════════════════════════════════════════════
    LIGHT THEME
    ═══════════════════════════════════════════════════════════ */
@@ -1353,6 +1384,57 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
       </div>
 
       <div class="ps-foot" style="margin-top:18px">Posición = 10% del capital · Entradas = % de la posición</div>
+
+      <div class="ps-divider"></div>
+      <div class="sec">Precio de entradas</div>
+
+      <div class="cap-price-inputs">
+        <div class="cap-price-row cap-pr1">
+          <div class="cap-price-dot"></div>
+          <div class="cap-price-meta">
+            <span class="cap-price-tag">1ª entrada</span>
+            <span class="cap-price-amt" id="capPrAmt1">— USDT</span>
+          </div>
+          <div class="cap-price-field">
+            <input type="number" inputmode="decimal" id="capPr1" placeholder="0.00">
+            <span class="cap-punit">USDT</span>
+          </div>
+        </div>
+        <div class="cap-price-row cap-pr2">
+          <div class="cap-price-dot"></div>
+          <div class="cap-price-meta">
+            <span class="cap-price-tag">2ª entrada</span>
+            <span class="cap-price-amt" id="capPrAmt2">— USDT</span>
+          </div>
+          <div class="cap-price-field">
+            <input type="number" inputmode="decimal" id="capPr2" placeholder="0.00">
+            <span class="cap-punit">USDT</span>
+          </div>
+        </div>
+        <div class="cap-price-row cap-pr3">
+          <div class="cap-price-dot"></div>
+          <div class="cap-price-meta">
+            <span class="cap-price-tag">3ª entrada</span>
+            <span class="cap-price-amt" id="capPrAmt3">— USDT</span>
+          </div>
+          <div class="cap-price-field">
+            <input type="number" inputmode="decimal" id="capPr3" placeholder="0.00">
+            <span class="cap-punit">USDT</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="capAvgCard" class="cap-avg-card" style="display:none">
+        <div class="cap-glow" style="position:absolute;top:-50%;right:-10%;width:200px;height:200px;background:radial-gradient(circle,var(--green) 0%,transparent 70%)"></div>
+        <div class="cap-avg-label">Precio Medio Ponderado</div>
+        <div class="cap-avg-row">
+          <span class="cap-avg-num" id="capAvgNum">0,00</span>
+          <span class="cap-avg-unit">USDT</span>
+        </div>
+        <div class="cap-avg-sub" id="capAvgSub"></div>
+      </div>
+
+      <div class="ps-foot" style="margin-top:14px">Precio medio ponderado por el tamaño de cada entrada</div>
     </div>
 
     <div id="capEmpty" class="cap-empty">
@@ -1646,20 +1728,61 @@ psUpdateFill();psUpdateBtns();
   const capE1Bar=$('capE1Bar');
   const capE2Bar=$('capE2Bar');
   const capE3Bar=$('capE3Bar');
-  let prevPos=0,prevE1=0,prevE2=0,prevE3=0,capShown=false;
+  const capPr1=$('capPr1');
+  const capPr2=$('capPr2');
+  const capPr3=$('capPr3');
+  const capPrAmt1=$('capPrAmt1');
+  const capPrAmt2=$('capPrAmt2');
+  const capPrAmt3=$('capPrAmt3');
+  const capAvgCard=$('capAvgCard');
+  const capAvgNum=$('capAvgNum');
+  const capAvgSub=$('capAvgSub');
 
-  function capCount(el,from,to,ms){
-    ms=ms||600;
+  let prevPos=0,prevE1=0,prevE2=0,prevE3=0,capShown=false;
+  let curE1=0,curE2=0,curE3=0,prevAvg=0;
+
+  function fmtPrice(n){
+    if(n===0)return psFmt(0);
+    const d=n<1?6:n<10?4:2;
+    return n.toLocaleString('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d});
+  }
+
+  function capCount(el,from,to,ms,fmt){
+    ms=ms||600;fmt=fmt||psFmt;
     if(el._raf)cancelAnimationFrame(el._raf);
     const t0=performance.now();
     function step(t){
       const p=Math.min((t-t0)/ms,1);
       const ease=1-(1-p)*(1-p)*(1-p);
-      el.textContent=psFmt(from+(to-from)*ease);
+      el.textContent=fmt(from+(to-from)*ease);
       if(p<1)el._raf=requestAnimationFrame(step);
-      else{el.textContent=psFmt(to);el._raf=null;}
+      else{el.textContent=fmt(to);el._raf=null;}
     }
     el._raf=requestAnimationFrame(step);
+  }
+
+  function avgCalc(){
+    const p1=parseFloat(capPr1.value)||0;
+    const p2=parseFloat(capPr2.value)||0;
+    const p3=parseFloat(capPr3.value)||0;
+    const entries=[];
+    if(p1>0&&curE1>0)entries.push({p:p1,a:curE1});
+    if(p2>0&&curE2>0)entries.push({p:p2,a:curE2});
+    if(p3>0&&curE3>0)entries.push({p:p3,a:curE3});
+    if(!entries.length){capAvgCard.style.display='none';prevAvg=0;return;}
+    const totalAmt=entries.reduce((s,x)=>s+x.a,0);
+    const totalCoins=entries.reduce((s,x)=>s+x.a/x.p,0);
+    const avg=totalAmt/totalCoins;
+    const wasHidden=capAvgCard.style.display==='none';
+    capAvgCard.style.display='block';
+    if(wasHidden){
+      requestAnimationFrame(()=>requestAnimationFrame(()=>capCount(capAvgNum,0,avg,500,fmtPrice)));
+    } else {
+      capCount(capAvgNum,prevAvg,avg,350,fmtPrice);
+    }
+    const label=entries.length===1?'1 entrada':entries.length+' entradas';
+    capAvgSub.textContent='Basado en '+label+' · '+psFmt(totalAmt)+' USDT totales';
+    prevAvg=avg;
   }
 
   function capCalc(){
@@ -1668,8 +1791,9 @@ psUpdateFill();psUpdateBtns();
       capResults.style.display='none';
       capEmpty.style.display='';
       capE1Bar.style.width='0';capE2Bar.style.width='0';capE3Bar.style.width='0';
-      capShown=false;
-      prevPos=prevE1=prevE2=prevE3=0;
+      capShown=false;curE1=curE2=curE3=0;
+      prevPos=prevE1=prevE2=prevE3=prevAvg=0;
+      capAvgCard.style.display='none';
       return;
     }
     const wasHidden=!capShown;
@@ -1681,12 +1805,16 @@ psUpdateFill();psUpdateBtns();
     const e1=pos*0.15;
     const e2=pos*0.30;
     const e3=pos*0.55;
+    curE1=e1;curE2=e2;curE3=e3;
 
     capCount(capPosNum,prevPos,pos);
     capCount(capE1Num,prevE1,e1);
     capCount(capE2Num,prevE2,e2);
     capCount(capE3Num,prevE3,e3);
     capPosSub.textContent=psFmt(cap)+' USDT de capital';
+    capPrAmt1.textContent=psFmt(e1)+' USDT';
+    capPrAmt2.textContent=psFmt(e2)+' USDT';
+    capPrAmt3.textContent=psFmt(e3)+' USDT';
 
     if(wasHidden){
       requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -1696,10 +1824,12 @@ psUpdateFill();psUpdateBtns();
       }));
     }
 
+    avgCalc();
     prevPos=pos;prevE1=e1;prevE2=e2;prevE3=e3;
   }
 
   capInput.addEventListener('input',capCalc);
+  [capPr1,capPr2,capPr3].forEach(inp=>inp.addEventListener('input',avgCalc));
 })();
 
 /* ── Migrate old versions ─────────────────────────────────── */
