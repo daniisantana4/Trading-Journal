@@ -2154,19 +2154,52 @@ psUpdateFill();psUpdateBtns();
   });
 
   // ── Operaciones abiertas ──────────────────────────────────
+  const SB_URL='https://bcrrmgmfpqbidjdnsvyk.supabase.co';
+  const SB_KEY='sb_publishable_WF5mlrGd33cR6Ss3LdmaSg_nT2OCT08';
+  const SB_H={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
   const OPS_KEY='hub_cap_ops';
-  let ops=[],activeOpId=null;
+  const UID_KEY='hub_uid';
+
+  function getUid(){
+    let u=localStorage.getItem(UID_KEY);
+    if(!u){u=crypto.randomUUID();localStorage.setItem(UID_KEY,u);}
+    return u;
+  }
+  const SB_UID=getUid();
+
+  let ops=[],activeOpId=null,sbReady=false;
 
   function opToast(msg,type){
     const t=$('toast');t.textContent=msg;
     t.className='toast '+(type||'success');t.classList.add('show');
     clearTimeout(t._to);t._to=setTimeout(()=>t.classList.remove('show'),2500);
   }
-  function loadOpsStore(){
-    try{ops=JSON.parse(localStorage.getItem(OPS_KEY))||[];}catch(e){ops=[];}
-  }
-  function saveOpsStore(){localStorage.setItem(OPS_KEY,JSON.stringify(ops));}
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  // ── Supabase helpers ──
+  async function sbFetch(path,opts={}){
+    const r=await fetch(SB_URL+path,{...opts,headers:{...SB_H,...(opts.headers||{})}});
+    if(!r.ok){const txt=await r.text();throw new Error(txt);}
+    return r;
+  }
+  async function dbLoad(){
+    const r=await sbFetch('/rest/v1/operations?user_id=eq.'+SB_UID+'&select=*&order=created_at.asc');
+    const rows=await r.json();
+    return rows.map(row=>({id:row.id,name:row.name,...row.data}));
+  }
+  function opToRow(op){
+    return{user_id:SB_UID,name:op.name,data:{capital:op.capital,pr1:op.pr1,pr2:op.pr2,pr3:op.pr3,lev:op.lev,tps:op.tps,savedAt:op.savedAt}};
+  }
+  async function dbInsert(op){
+    const r=await sbFetch('/rest/v1/operations',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify(opToRow(op))});
+    const rows=await r.json();return rows[0].id;
+  }
+  async function dbUpdate(id,op){
+    await sbFetch('/rest/v1/operations?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({name:op.name,data:{capital:op.capital,pr1:op.pr1,pr2:op.pr2,pr3:op.pr3,lev:op.lev,tps:op.tps,savedAt:op.savedAt},updated_at:new Date().toISOString()})});
+  }
+  async function dbDelete(id){
+    await sbFetch('/rest/v1/operations?id=eq.'+id,{method:'DELETE'});
+  }
 
   function getCurrentState(){
     return{
@@ -2188,6 +2221,9 @@ psUpdateFill();psUpdateBtns();
 
   function renderOpsList(){
     const el=$('capOpsList');
+    if(!sbReady){
+      el.innerHTML='<div class="cap-ops-empty">Conectando con la nube…</div>';return;
+    }
     if(!ops.length){
       el.innerHTML='<div class="cap-ops-empty">Sin operaciones guardadas · Guarda una para recuperarla</div>';
       return;
@@ -2201,7 +2237,7 @@ psUpdateFill();psUpdateBtns();
       if(op.capital)parts.push(psFmt(parseFloat(op.capital)||0)+' USDT');
       if(op.lev)parts.push(op.lev+'×');
       if(tpTotal)parts.push(tpHit+'/'+tpTotal+' TPs');
-      return`<div class="cap-op-chip${active?' active':''}" data-opid="${op.id}">
+      return`<div class="cap-op-chip${active?' active':''}" data-opid="${esc(op.id)}">
         <div class="cap-op-chip-info">
           <span class="cap-op-chip-name">${esc(op.name||'Sin nombre')}</span>
           <span class="cap-op-chip-meta">${parts.join(' · ')}</span>
@@ -2214,21 +2250,24 @@ psUpdateFill();psUpdateBtns();
     }).join('');
   }
 
-  function saveCurrentOp(){
+  async function saveCurrentOp(){
     const nameInp=$('capOpName');
     const name=nameInp.value.trim()||'Operación '+new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
     nameInp.value=name;
     const state=getCurrentState();
-    if(activeOpId){
-      const op=ops.find(o=>o.id===activeOpId);
-      if(op)Object.assign(op,state,{name,savedAt:new Date().toISOString()});
-      else{const n={id:Date.now(),name,...state,savedAt:new Date().toISOString()};ops.push(n);activeOpId=n.id;}
-    }else{
-      const n={id:Date.now(),name,...state,savedAt:new Date().toISOString()};
-      ops.push(n);activeOpId=n.id;
-    }
-    saveOpsStore();renderOpsList();
-    opToast('Operación guardada','success');
+    const opData={name,...state,savedAt:new Date().toISOString()};
+    const btn=$('capOpSave');btn.disabled=true;btn.style.opacity='0.5';
+    try{
+      if(activeOpId){
+        const op=ops.find(o=>o.id===activeOpId);
+        if(op){Object.assign(op,opData);await dbUpdate(activeOpId,op);}
+        else{const id=await dbInsert(opData);ops.push({...opData,id});activeOpId=id;}
+      }else{
+        const id=await dbInsert(opData);ops.push({...opData,id});activeOpId=id;
+      }
+      renderOpsList();opToast('Operación guardada','success');
+    }catch(e){opToast('Error al guardar: sin conexión','error');}
+    btn.disabled=false;btn.style.opacity='';
   }
 
   function loadOp(id){
@@ -2241,12 +2280,14 @@ psUpdateFill();psUpdateBtns();
     opToast('Operación cargada','success');
   }
 
-  function deleteOp(id){
-    const wasActive=activeOpId===id;
-    ops=ops.filter(o=>o.id!==id);
-    if(wasActive){activeOpId=null;$('capOpName').value='';}
-    saveOpsStore();renderOpsList();
-    opToast('Operación finalizada','success');
+  async function deleteOp(id){
+    try{
+      await dbDelete(id);
+      const wasActive=activeOpId===id;
+      ops=ops.filter(o=>o.id!==id);
+      if(wasActive){activeOpId=null;$('capOpName').value='';}
+      renderOpsList();opToast('Operación finalizada','success');
+    }catch(e){opToast('Error al eliminar: sin conexión','error');}
   }
 
   function clearAll(){
@@ -2256,8 +2297,28 @@ psUpdateFill();psUpdateBtns();
     capShown=false;capCalc();renderOpsList();
   }
 
-  // Init
-  loadOpsStore();renderOpsList();
+  // Init: cargar desde Supabase, migrar desde localStorage si hay datos locales
+  (async function initOps(){
+    renderOpsList();
+    try{
+      ops=await dbLoad();
+      let local=[];
+      try{local=JSON.parse(localStorage.getItem(OPS_KEY))||[];}catch(_){}
+      if(local.length&&!ops.length){
+        for(const op of local){
+          try{const id=await dbInsert(op);ops.push({...op,id});}catch(_){}
+        }
+        localStorage.removeItem(OPS_KEY);
+        if(ops.length)opToast(ops.length+' operación'+(ops.length>1?'es':'')+(ops.length>1?' migradas':' migrada')+' a la nube','success');
+      }
+    }catch(e){
+      let local=[];
+      try{local=JSON.parse(localStorage.getItem(OPS_KEY))||[];}catch(_){}
+      ops=local;
+      opToast(local.length?'Sin conexión · Mostrando datos locales':'Error al conectar con la nube','error');
+    }
+    sbReady=true;renderOpsList();
+  })();
 
   $('capOpSave').addEventListener('click',saveCurrentOp);
   $('capOpNew').addEventListener('click',clearAll);
@@ -2265,7 +2326,7 @@ psUpdateFill();psUpdateBtns();
 
   $('capOpsList').addEventListener('click',e=>{
     const chip=e.target.closest('.cap-op-chip');if(!chip)return;
-    const id=parseInt(chip.dataset.opid);
+    const id=chip.dataset.opid;
     if(e.target.closest('.cap-op-chip-del'))deleteOp(id);
     else loadOp(id);
   });
