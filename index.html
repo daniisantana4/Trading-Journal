@@ -465,6 +465,11 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .cap-lev-btn:hover{border-color:var(--amber);color:var(--amber)}
 .cap-lev-btn.active{border-color:var(--amber);color:var(--amber);background:var(--amber-d)}
 
+.cap-dir-toggle{display:flex;gap:6px;margin-bottom:16px}
+.cap-dir-btn{flex:1;padding:11px;border:1.5px solid var(--border);border-radius:12px;background:var(--bg-card);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--text-3);cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:7px;-webkit-tap-highlight-color:transparent}
+.cap-dir-btn:hover:not(.active-long):not(.active-short){border-color:var(--border-glow);color:var(--text-2)}
+.cap-dir-btn.active-long{background:var(--green-d);color:var(--green);border-color:var(--green-s);box-shadow:0 0 14px var(--green-d)}
+.cap-dir-btn.active-short{background:var(--rose-d);color:var(--rose);border-color:var(--rose-s);box-shadow:0 0 14px var(--rose-d)}
 .cap-sl-card{position:relative;background:var(--bg-card);border:1.5px solid #ea394328;border-radius:16px;padding:20px;overflow:hidden;transition:all .35s}
 .cap-sl-card:hover{border-color:#ea394345;box-shadow:0 0 28px #ea394312}
 .cap-sl-card .cap-glow{top:-50%;right:-10%;width:220px;height:220px;background:radial-gradient(circle,var(--rose) 0%,transparent 70%)}
@@ -1515,6 +1520,17 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
       </div>
     </div>
 
+    <div class="cap-dir-toggle">
+      <button class="cap-dir-btn active-long" id="capDirLong">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        Long
+      </button>
+      <button class="cap-dir-btn" id="capDirShort">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        Short
+      </button>
+    </div>
+
     <div id="capResults" style="display:none">
       <div class="ps-divider"></div>
       <div class="sec">Posición calculada</div>
@@ -1641,12 +1657,12 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
         <div id="capSlPricesWrap" style="display:none">
           <div class="cap-sl-sep"></div>
           <div class="cap-sl-price-list">
-            <div class="cap-sl-row">
+            <div class="cap-sl-row" id="capSlRowLong">
               <span class="cap-sl-dir long">LONG ↓</span>
               <span class="cap-sl-price" id="capSlLong">—</span>
               <span class="cap-sl-pusdt">USDT</span>
             </div>
-            <div class="cap-sl-row">
+            <div class="cap-sl-row" id="capSlRowShort" style="display:none">
               <span class="cap-sl-dir short">SHORT ↑</span>
               <span class="cap-sl-price" id="capSlShort">—</span>
               <span class="cap-sl-pusdt">USDT</span>
@@ -1972,11 +1988,12 @@ psUpdateFill();psUpdateBtns();
   const capSlRemain=$('capSlRemain'),capSlPricesWrap=$('capSlPricesWrap');
   const capSlLong=$('capSlLong'),capSlShort=$('capSlShort');
   const capTpList=$('capTpList'),capTpAdd=$('capTpAdd');
+  const capDirLong=$('capDirLong'),capDirShort=$('capDirShort');
 
   // ── State ─────────────────────────────────────────────────
   let prevPos=0,prevE1=0,prevE2=0,prevE3=0,capShown=false;
   let curE1=0,curE2=0,curE3=0,curCap=0,curPos=0,curAvg=0,prevAvg=0,prevSlPct=0;
-  let curRemaining=0;
+  let curRemaining=0,curDir='long';
   let tps=[],tpIdCtr=0;
 
   // ── Helpers ───────────────────────────────────────────────
@@ -2018,10 +2035,17 @@ psUpdateFill();psUpdateBtns();
   }
 
   // ── TP rendering ──────────────────────────────────────────
+  function setDir(d){
+    curDir=d;
+    capDirLong.className='cap-dir-btn'+(d==='long'?' active-long':'');
+    capDirShort.className='cap-dir-btn'+(d==='short'?' active-short':'');
+    slCalc();
+  }
   function calcPnl(tp,s){
     const lev=parseFloat(capLev.value)||0;
     if(!tp.price||!curAvg||!lev||!s.close)return null;
-    return s.close*lev*(tp.price-curAvg)/curAvg;
+    const diff=curDir==='long'?tp.price-curAvg:curAvg-tp.price;
+    return s.close*lev*diff/curAvg;
   }
   function tpCardHTML(tp,i,s){
     const hasInfo=s.pct>0&&curPos>0;
@@ -2150,6 +2174,8 @@ psUpdateFill();psUpdateBtns();
       capSlPricesWrap.style.display='block';
       capSlLong.textContent=fmtPrice(curAvg*(1-movePct/100));
       capSlShort.textContent=fmtPrice(curAvg*(1+movePct/100));
+      $('capSlRowLong').style.display=curDir==='long'?'flex':'none';
+      $('capSlRowShort').style.display=curDir==='short'?'flex':'none';
     }else{
       capSlPricesWrap.style.display='none';
     }
@@ -2214,6 +2240,8 @@ psUpdateFill();psUpdateBtns();
   }
 
   // ── Events ────────────────────────────────────────────────
+  capDirLong.addEventListener('click',()=>setDir('long'));
+  capDirShort.addEventListener('click',()=>setDir('short'));
   capInput.addEventListener('input',capCalc);
   [capPr1,capPr2,capPr3].forEach(inp=>inp.addEventListener('input',avgCalc));
   capLev.addEventListener('input',slCalc);
@@ -2309,6 +2337,7 @@ psUpdateFill();psUpdateBtns();
       capital:capInput.value,
       pr1:capPr1.value,pr2:capPr2.value,pr3:capPr3.value,
       lev:capLev.value,
+      dir:curDir,
       tps:tps.map(t=>({id:t.id,price:t.price,pct:t.pct,hit:t.hit}))
     };
   }
@@ -2319,6 +2348,7 @@ psUpdateFill();psUpdateBtns();
     capInput.value=state.capital||'';
     capPr1.value=state.pr1||'';capPr2.value=state.pr2||'';capPr3.value=state.pr3||'';
     capLev.value=state.lev||'';
+    setDir(state.dir||'long');
     capCalc();
   }
 
