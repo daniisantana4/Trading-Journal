@@ -520,6 +520,15 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .cap-op-new-btn{padding:9px 12px;background:transparent;border:1.5px solid var(--border);border-radius:9px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;transition:all .25s;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;gap:5px}
 .cap-op-new-btn:hover{border-color:var(--border-glow);color:var(--text-1)}
 .cap-ops-list{display:flex;flex-direction:column}
+.cap-sync-row{display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--border);background:var(--bg-card-hover)}
+.cap-sync-display{display:flex;flex-direction:column;gap:1px;flex-shrink:0;min-width:80px}
+.cap-sync-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1px}
+.cap-sync-code{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--green)}
+.cap-sync-input{flex:1;min-width:0;background:var(--bg-input);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:var(--text-1);outline:none;transition:border-color .2s}
+.cap-sync-input:focus{border-color:var(--green)}
+.cap-sync-input::placeholder{color:var(--text-3)}
+.cap-sync-btn{padding:8px 13px;background:transparent;border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;transition:all .25s;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.cap-sync-btn:hover{border-color:var(--green);color:var(--green)}
 .cap-op-chip{display:flex;align-items:center;gap:8px;padding:11px 12px;border-top:1px solid var(--border);-webkit-tap-highlight-color:transparent;transition:background .2s}
 .cap-op-chip.active{background:var(--green-d)}
 .cap-op-chip-info{flex:1;min-width:0;cursor:pointer}
@@ -1425,6 +1434,14 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
           Nueva
         </button>
       </div>
+      <div class="cap-sync-row">
+        <div class="cap-sync-display">
+          <span class="cap-sync-lbl">Tu código</span>
+          <span id="capSyncCodeDisplay" class="cap-sync-code">—</span>
+        </div>
+        <input type="text" id="capSyncInput" class="cap-sync-input" placeholder="Código de otro dispositivo…" maxlength="40" autocomplete="off" spellcheck="false">
+        <button id="capSyncBtn" class="cap-sync-btn">Sincronizar</button>
+      </div>
       <div id="capOpsList" class="cap-ops-list"></div>
     </div>
 
@@ -2162,10 +2179,11 @@ psUpdateFill();psUpdateBtns();
 
   function getUid(){
     let u=localStorage.getItem(UID_KEY);
-    if(!u){u=crypto.randomUUID();localStorage.setItem(UID_KEY,u);}
+    if(!u){u=Math.random().toString(36).slice(2,10);localStorage.setItem(UID_KEY,u);}
     return u;
   }
   const SB_UID=getUid();
+  document.getElementById('capSyncCodeDisplay').textContent=SB_UID;
 
   let ops=[],activeOpId=null,sbReady=false;
 
