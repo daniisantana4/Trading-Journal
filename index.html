@@ -2437,6 +2437,7 @@ psUpdateFill();psUpdateBtns();
     }else if(e.target.classList.contains('cap-tp-pct')){
       tp.pct=parseFloat(e.target.value)||0;
       updateTpInfo();
+      updateTpPnl();
     }
   });
 
