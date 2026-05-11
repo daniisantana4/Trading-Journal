@@ -476,6 +476,34 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .cap-sl-dir.short{background:var(--rose-d);color:var(--rose);border:1px solid #ea394330}
 .cap-sl-price{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--text-1);flex:1;text-align:right}
 .cap-sl-pusdt{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);flex-shrink:0;width:32px;text-align:right}
+.cap-sl-remain{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--amber);background:var(--amber-d);border:1px solid #ffb80025;padding:4px 10px;border-radius:6px;margin-top:8px;display:inline-block;letter-spacing:.3px}
+
+.cap-tp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:all .3s}
+.cap-tp-card.hit{opacity:.7;border-color:#16c78432}
+.cap-tp-head{display:flex;align-items:center;gap:8px;padding:11px 14px 10px;border-bottom:1px solid var(--border)}
+.cap-tp-num{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--green);background:var(--green-d);border:1px solid #16c78430;padding:3px 9px;border-radius:6px;letter-spacing:.5px;flex-shrink:0}
+.cap-tp-card.hit .cap-tp-num{color:var(--text-3);background:var(--border);border-color:transparent}
+.cap-tp-before{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-3);flex:1;letter-spacing:.3px}
+.cap-tp-del{background:none;border:none;cursor:pointer;color:var(--text-3);display:flex;align-items:center;padding:5px;border-radius:7px;transition:all .2s;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.cap-tp-del:hover{color:var(--rose);background:var(--rose-d)}
+.cap-tp-inputs{display:flex;gap:10px;padding:12px 14px}
+.cap-tp-inp-grp{display:flex;flex-direction:column;gap:6px}
+.cap-tp-inp-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1px}
+.cap-tp-inp-grp .cap-price-field{width:100%}
+.cap-tp-inp-grp .cap-price-field input{width:100%;background:var(--bg-input);border:1.5px solid var(--border);border-radius:9px;padding:9px 46px 9px 11px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--text-1);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.cap-tp-inp-grp .cap-price-field input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-d)}
+.cap-tp-inp-grp .cap-price-field input::placeholder{color:var(--text-3)}
+.cap-tp-inp-grp .cap-price-field input[readonly]{opacity:.55;cursor:not-allowed}
+.cap-tp-info-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-card-hover);border-top:1px solid var(--border)}
+.cap-tp-info-item{display:flex;flex-direction:column;gap:2px;flex:1}
+.cap-tp-info-lbl{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1px}
+.cap-tp-info-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-1)}
+.cap-tp-info-sep{width:1px;height:28px;background:var(--border);flex-shrink:0}
+.cap-tp-hit-btn{width:100%;padding:11px;background:transparent;border:none;border-top:1px solid var(--border);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:var(--text-3);cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
+.cap-tp-hit-btn:hover{background:var(--green-d);color:var(--green)}
+.cap-tp-hit-btn.active{background:var(--green-d);color:var(--green);font-weight:700}
+.cap-tp-add-btn{width:100%;padding:12px;background:transparent;border:1.5px dashed var(--border);border-radius:12px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--text-3);cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
+.cap-tp-add-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-d)}
 
 /* ═══════════════════════════════════════════════════════════
    LIGHT THEME
@@ -1489,6 +1517,7 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
         <div class="cap-sl-pct-lbl">Distancia máxima del precio de entrada</div>
         <div class="cap-sl-pct" id="capSlPct">0,00%</div>
         <div class="cap-sl-pct-sub" id="capSlPctSub"></div>
+        <div id="capSlRemain" class="cap-sl-remain" style="display:none"></div>
         <div id="capSlPricesWrap" style="display:none">
           <div class="cap-sl-sep"></div>
           <div class="cap-sl-price-list">
@@ -1505,6 +1534,15 @@ body[data-active-tab="journal"] .container{max-width:1400px;padding-left:8px;pad
           </div>
         </div>
       </div>
+
+      <div class="ps-divider"></div>
+      <div class="sec">Take Profit</div>
+
+      <div class="cap-tp-list" id="capTpList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px"></div>
+      <button class="cap-tp-add-btn" id="capTpAdd">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Añadir Take Profit
+      </button>
 
       <div class="ps-foot" style="margin-top:14px">Máxima pérdida permitida: 2% del capital total de la cuenta</div>
     </div>
@@ -1789,43 +1827,32 @@ psUpdateFill();psUpdateBtns();
    CAPITAL MANAGEMENT
    ═══════════════════════════════════════════════════════════ */
 (function(){
-  const capInput=$('capInput');
-  const capResults=$('capResults');
-  const capEmpty=$('capEmpty');
-  const capPosNum=$('capPosNum');
-  const capPosSub=$('capPosSub');
-  const capE1Num=$('capE1Num');
-  const capE2Num=$('capE2Num');
-  const capE3Num=$('capE3Num');
-  const capE1Bar=$('capE1Bar');
-  const capE2Bar=$('capE2Bar');
-  const capE3Bar=$('capE3Bar');
-  const capPr1=$('capPr1');
-  const capPr2=$('capPr2');
-  const capPr3=$('capPr3');
-  const capPrAmt1=$('capPrAmt1');
-  const capPrAmt2=$('capPrAmt2');
-  const capPrAmt3=$('capPrAmt3');
-  const capAvgCard=$('capAvgCard');
-  const capAvgNum=$('capAvgNum');
-  const capAvgSub=$('capAvgSub');
+  // ── DOM refs ──────────────────────────────────────────────
+  const capInput=$('capInput'),capResults=$('capResults'),capEmpty=$('capEmpty');
+  const capPosNum=$('capPosNum'),capPosSub=$('capPosSub');
+  const capE1Num=$('capE1Num'),capE2Num=$('capE2Num'),capE3Num=$('capE3Num');
+  const capE1Bar=$('capE1Bar'),capE2Bar=$('capE2Bar'),capE3Bar=$('capE3Bar');
+  const capPr1=$('capPr1'),capPr2=$('capPr2'),capPr3=$('capPr3');
+  const capPrAmt1=$('capPrAmt1'),capPrAmt2=$('capPrAmt2'),capPrAmt3=$('capPrAmt3');
+  const capAvgCard=$('capAvgCard'),capAvgNum=$('capAvgNum'),capAvgSub=$('capAvgSub');
   const capLev=$('capLev');
-  const capSlCard=$('capSlCard');
-  const capSlPct=$('capSlPct');
-  const capSlPctSub=$('capSlPctSub');
-  const capSlPricesWrap=$('capSlPricesWrap');
-  const capSlLong=$('capSlLong');
-  const capSlShort=$('capSlShort');
+  const capSlCard=$('capSlCard'),capSlPct=$('capSlPct'),capSlPctSub=$('capSlPctSub');
+  const capSlRemain=$('capSlRemain'),capSlPricesWrap=$('capSlPricesWrap');
+  const capSlLong=$('capSlLong'),capSlShort=$('capSlShort');
+  const capTpList=$('capTpList'),capTpAdd=$('capTpAdd');
 
+  // ── State ─────────────────────────────────────────────────
   let prevPos=0,prevE1=0,prevE2=0,prevE3=0,capShown=false;
-  let curE1=0,curE2=0,curE3=0,curCap=0,curAvg=0,prevAvg=0,prevSlPct=0;
+  let curE1=0,curE2=0,curE3=0,curCap=0,curPos=0,curAvg=0,prevAvg=0,prevSlPct=0;
+  let curRemaining=0;
+  let tps=[],tpIdCtr=0;
 
+  // ── Helpers ───────────────────────────────────────────────
   function fmtPrice(n){
-    if(n===0)return psFmt(0);
+    if(!n)return psFmt(0);
     const d=n<1?6:n<10?4:2;
     return n.toLocaleString('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d});
   }
-
   function capCount(el,from,to,ms,fmt){
     ms=ms||600;fmt=fmt||psFmt;
     if(el._raf)cancelAnimationFrame(el._raf);
@@ -1840,35 +1867,125 @@ psUpdateFill();psUpdateBtns();
     el._raf=requestAnimationFrame(step);
   }
 
+  // ── TP state ──────────────────────────────────────────────
+  function computeTps(){
+    let rem=curPos;
+    return tps.map(tp=>{
+      const before=rem;
+      const pct=tp.pct>0&&tp.pct<=100?tp.pct:0;
+      const close=before*(pct/100);
+      const after=before-close;
+      if(tp.hit)rem=after;
+      return{before,close,after,pct};
+    });
+  }
+  function getRemaining(){
+    let rem=curPos;
+    for(const tp of tps)if(tp.hit&&tp.pct>0)rem*=(1-tp.pct/100);
+    return rem;
+  }
+
+  // ── TP rendering ──────────────────────────────────────────
+  function tpCardHTML(tp,i,s){
+    const hasInfo=s.pct>0&&curPos>0;
+    return `<div class="cap-tp-card${tp.hit?' hit':''}" data-id="${tp.id}">
+      <div class="cap-tp-head">
+        <div class="cap-tp-num">TP ${i+1}</div>
+        <div class="cap-tp-before">${curPos>0?psFmt(s.before)+' USDT disponibles':''}</div>
+        <button class="cap-tp-del" title="Eliminar">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+      <div class="cap-tp-inputs">
+        <div class="cap-tp-inp-grp" style="flex:1">
+          <div class="cap-tp-inp-lbl">Precio de salida</div>
+          <div class="cap-price-field" style="width:100%">
+            <input type="number" inputmode="decimal" class="cap-tp-price" value="${tp.price||''}" placeholder="0.00"${tp.hit?' readonly':''}>
+            <span class="cap-punit">USDT</span>
+          </div>
+        </div>
+        <div class="cap-tp-inp-grp" style="width:90px;flex-shrink:0">
+          <div class="cap-tp-inp-lbl">% a cerrar</div>
+          <div class="cap-price-field" style="width:100%">
+            <input type="number" inputmode="decimal" class="cap-tp-pct" value="${tp.pct||''}" placeholder="25" min="1" max="100"${tp.hit?' readonly':''}>
+            <span class="cap-punit">%</span>
+          </div>
+        </div>
+      </div>
+      <div class="cap-tp-info-bar">
+        <div class="cap-tp-info-item">
+          <span class="cap-tp-info-lbl">Cierra</span>
+          <span class="cap-tp-info-val" id="cap-tp-close-${tp.id}">${hasInfo?psFmt(s.close)+' USDT':'—'}</span>
+        </div>
+        <div class="cap-tp-info-sep"></div>
+        <div class="cap-tp-info-item">
+          <span class="cap-tp-info-lbl">Queda abierto</span>
+          <span class="cap-tp-info-val" id="cap-tp-after-${tp.id}">${hasInfo?psFmt(s.after)+' USDT':'—'}</span>
+        </div>
+      </div>
+      <button class="cap-tp-hit-btn${tp.hit?' active':''}">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="${tp.hit?3:2}" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        ${tp.hit?'TP TOCADO':'Marcar como tocado'}
+      </button>
+    </div>`;
+  }
+  function renderTps(){
+    const states=computeTps();
+    capTpList.innerHTML=tps.map((tp,i)=>tpCardHTML(tp,i,states[i])).join('');
+    syncRemaining();
+  }
+  function updateTpInfo(){
+    const states=computeTps();
+    tps.forEach((tp,i)=>{
+      const s=states[i];const hasInfo=s.pct>0&&curPos>0;
+      const ce=document.getElementById('cap-tp-close-'+tp.id);
+      const ae=document.getElementById('cap-tp-after-'+tp.id);
+      if(ce)ce.textContent=hasInfo?psFmt(s.close)+' USDT':'—';
+      if(ae)ae.textContent=hasInfo?psFmt(s.after)+' USDT':'—';
+    });
+    syncRemaining();
+  }
+  function syncRemaining(){curRemaining=getRemaining();slCalc();}
+
+  // ── SL calculation ────────────────────────────────────────
   function slCalc(){
     const lev=parseFloat(capLev.value)||0;
     document.querySelectorAll('.cap-lev-btn').forEach(b=>
       b.classList.toggle('active',parseFloat(b.dataset.lev)===lev));
     if(lev<=0||curCap<=0){capSlCard.style.display='none';return;}
-    // % move from entry that wipes 2% of total capital
-    // maxLoss = cap*0.02 | pos = cap*0.10 | contracts = pos*lev/avgPrice
-    // movePct = maxLoss/(pos*lev) = (cap*0.02)/(cap*0.10*lev) = 0.2/lev
-    const movePct=(0.2/lev)*100;
+    const rem=curRemaining>0?curRemaining:curPos;
+    if(rem<=0){capSlCard.style.display='none';return;}
+    const maxLoss=curCap*0.02;
+    const movePct=maxLoss/(rem*lev)*100;
     const wasHidden=capSlCard.style.display==='none';
     capSlCard.style.display='block';
     if(wasHidden){
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{
-        capCount(capSlPct,0,movePct,500,v=>fmtPrice(v)+'%');
-      }));
-    } else {
+      requestAnimationFrame(()=>requestAnimationFrame(()=>
+        capCount(capSlPct,0,movePct,500,v=>fmtPrice(v)+'%')));
+    }else{
       capCount(capSlPct,prevSlPct,movePct,350,v=>fmtPrice(v)+'%');
     }
-    capSlPctSub.textContent='Con '+lev+'× · pérdida = '+psFmt(curCap*0.02)+' USDT (2% del capital)';
+    // Sub-info and remaining badge
+    const tpsHit=tps.filter(t=>t.hit).length;
+    if(tpsHit>0&&curPos>0&&curRemaining<curPos){
+      capSlRemain.textContent='Posición ajustada tras '+tpsHit+' TP'+(tpsHit>1?'s':'')+': '+psFmt(curRemaining)+' USDT';
+      capSlRemain.style.display='inline-block';
+      capSlPctSub.textContent='Con '+lev+'× · SL máx = '+psFmt(maxLoss)+' USDT · posición restante';
+    }else{
+      capSlRemain.style.display='none';
+      capSlPctSub.textContent='Con '+lev+'× · pérdida máx = '+psFmt(maxLoss)+' USDT (2% del capital)';
+    }
     if(curAvg>0){
       capSlPricesWrap.style.display='block';
-      capSlLong.textContent=fmtPrice(curAvg*(1-0.2/lev));
-      capSlShort.textContent=fmtPrice(curAvg*(1+0.2/lev));
-    } else {
+      capSlLong.textContent=fmtPrice(curAvg*(1-movePct/100));
+      capSlShort.textContent=fmtPrice(curAvg*(1+movePct/100));
+    }else{
       capSlPricesWrap.style.display='none';
     }
     prevSlPct=movePct;
   }
 
+  // ── Avg price ─────────────────────────────────────────────
   function avgCalc(){
     const p1=parseFloat(capPr1.value)||0;
     const p2=parseFloat(capPr2.value)||0;
@@ -1878,78 +1995,92 @@ psUpdateFill();psUpdateBtns();
     if(p2>0&&curE2>0)entries.push({p:p2,a:curE2});
     if(p3>0&&curE3>0)entries.push({p:p3,a:curE3});
     if(!entries.length){
-      capAvgCard.style.display='none';
-      curAvg=0;prevAvg=0;
-      slCalc();
-      return;
+      capAvgCard.style.display='none';curAvg=0;prevAvg=0;syncRemaining();return;
     }
     const totalAmt=entries.reduce((s,x)=>s+x.a,0);
-    const totalCoins=entries.reduce((s,x)=>s+x.a/x.p,0);
-    const avg=totalAmt/totalCoins;
+    const avg=totalAmt/entries.reduce((s,x)=>s+x.a/x.p,0);
     const wasHidden=capAvgCard.style.display==='none';
     capAvgCard.style.display='block';
     if(wasHidden){
       requestAnimationFrame(()=>requestAnimationFrame(()=>capCount(capAvgNum,0,avg,500,fmtPrice)));
-    } else {
+    }else{
       capCount(capAvgNum,prevAvg,avg,350,fmtPrice);
     }
     const label=entries.length===1?'1 entrada':entries.length+' entradas';
     capAvgSub.textContent='Basado en '+label+' · '+psFmt(totalAmt)+' USDT totales';
-    curAvg=avg;prevAvg=avg;
-    slCalc();
+    curAvg=avg;prevAvg=avg;syncRemaining();
   }
 
+  // ── Capital ───────────────────────────────────────────────
   function capCalc(){
     const cap=parseFloat(capInput.value)||0;
     if(cap<=0){
-      capResults.style.display='none';
-      capEmpty.style.display='';
+      capResults.style.display='none';capEmpty.style.display='';
       capE1Bar.style.width='0';capE2Bar.style.width='0';capE3Bar.style.width='0';
-      capShown=false;curE1=curE2=curE3=curCap=curAvg=0;
+      capShown=false;curE1=curE2=curE3=curCap=curPos=curAvg=curRemaining=0;
       prevPos=prevE1=prevE2=prevE3=prevAvg=prevSlPct=0;
-      capAvgCard.style.display='none';
-      capSlCard.style.display='none';
+      capAvgCard.style.display='none';capSlCard.style.display='none';
       return;
     }
     const wasHidden=!capShown;
-    capResults.style.display='block';
-    capEmpty.style.display='none';
-    capShown=true;
-    curCap=cap;
-
-    const pos=cap*0.10;
-    const e1=pos*0.15;
-    const e2=pos*0.30;
-    const e3=pos*0.55;
-    curE1=e1;curE2=e2;curE3=e3;
-
+    capResults.style.display='block';capEmpty.style.display='none';capShown=true;curCap=cap;
+    const pos=cap*0.10,e1=pos*0.15,e2=pos*0.30,e3=pos*0.55;
+    curPos=pos;curE1=e1;curE2=e2;curE3=e3;
     capCount(capPosNum,prevPos,pos);
-    capCount(capE1Num,prevE1,e1);
-    capCount(capE2Num,prevE2,e2);
-    capCount(capE3Num,prevE3,e3);
+    capCount(capE1Num,prevE1,e1);capCount(capE2Num,prevE2,e2);capCount(capE3Num,prevE3,e3);
     capPosSub.textContent=psFmt(cap)+' USDT de capital';
     capPrAmt1.textContent=psFmt(e1)+' USDT';
     capPrAmt2.textContent=psFmt(e2)+' USDT';
     capPrAmt3.textContent=psFmt(e3)+' USDT';
-
     if(wasHidden){
       requestAnimationFrame(()=>requestAnimationFrame(()=>{
-        capE1Bar.style.width='27.3%';
-        capE2Bar.style.width='54.5%';
-        capE3Bar.style.width='100%';
+        capE1Bar.style.width='27.3%';capE2Bar.style.width='54.5%';capE3Bar.style.width='100%';
       }));
     }
-
-    avgCalc();
+    renderTps();avgCalc();
     prevPos=pos;prevE1=e1;prevE2=e2;prevE3=e3;
   }
 
+  // ── Events ────────────────────────────────────────────────
   capInput.addEventListener('input',capCalc);
   [capPr1,capPr2,capPr3].forEach(inp=>inp.addEventListener('input',avgCalc));
   capLev.addEventListener('input',slCalc);
   document.querySelectorAll('.cap-lev-btn').forEach(b=>b.addEventListener('click',()=>{
     capLev.value=b.dataset.lev;slCalc();
   }));
+
+  capTpAdd.addEventListener('click',()=>{
+    tps.push({id:++tpIdCtr,price:0,pct:0,hit:false});
+    renderTps();
+    // scroll to new card
+    setTimeout(()=>{
+      const last=capTpList.lastElementChild;
+      if(last)last.scrollIntoView({behavior:'smooth',block:'nearest'});
+    },50);
+  });
+
+  capTpList.addEventListener('click',e=>{
+    const card=e.target.closest('.cap-tp-card');if(!card)return;
+    const id=parseInt(card.dataset.id);
+    const tp=tps.find(t=>t.id===id);if(!tp)return;
+    if(e.target.closest('.cap-tp-del')){
+      tps=tps.filter(t=>t.id!==id);renderTps();
+    }else if(e.target.closest('.cap-tp-hit-btn')){
+      tp.hit=!tp.hit;renderTps();
+    }
+  });
+
+  capTpList.addEventListener('input',e=>{
+    const card=e.target.closest('.cap-tp-card');if(!card)return;
+    const id=parseInt(card.dataset.id);
+    const tp=tps.find(t=>t.id===id);if(!tp)return;
+    if(e.target.classList.contains('cap-tp-price')){
+      tp.price=parseFloat(e.target.value)||0;
+    }else if(e.target.classList.contains('cap-tp-pct')){
+      tp.pct=parseFloat(e.target.value)||0;
+      updateTpInfo();
+    }
+  });
 })();
 
 /* ── Migrate old versions ─────────────────────────────────── */
