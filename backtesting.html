@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Backtesting · Trading Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050807;--bg-card:#0d1410;--bg-card-hover:#131c17;--bg-input:#080c0a;
+  --border:#1a2620;--border-glow:#2a3d33;--border-focus:#16c784;
+  --text-1:#f5fbf6;--text-2:#a8b3a8;--text-3:#6b7670;
+  --green:#16c784;--green-bright:#00ff88;--green-d:#16c78418;--green-s:#16c78440;
+  --amber:#ffb800;--amber-d:#ffb80018;
+  --rose:#ea3943;--rose-d:#ea394315;--rose-s:#ea394340;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{height:100%;background:var(--bg)}
+body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text-1);-webkit-font-smoothing:antialiased;display:flex;justify-content:center;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:linear-gradient(90deg,#16c78403 1px,transparent 1px),linear-gradient(0deg,#16c78403 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 20% 20%,#16c78408 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,#00ff8806 0%,transparent 50%);pointer-events:none;z-index:0;animation:drift 20s ease-in-out infinite alternate}
+@keyframes drift{0%{transform:translate(0,0)}100%{transform:translate(-3%,2%)}}
+.container{position:relative;z-index:1;max-width:720px;width:100%;padding:24px 16px 80px}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 #ffb80060}50%{opacity:.7;box-shadow:0 0 0 6px #ffb80000}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── HEADER ── */
+.app-header{text-align:center;margin-bottom:28px;opacity:0;animation:fadeDown .7s cubic-bezier(.16,1,.3,1) forwards}
+.back-link{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:100px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);text-decoration:none;letter-spacing:1px;transition:all .25s;margin-bottom:18px;-webkit-tap-highlight-color:transparent}
+.back-link:hover{border-color:var(--border-glow);color:var(--text-2)}
+.back-link svg{width:12px;height:12px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.app-logo{display:inline-flex;align-items:center;gap:12px;margin-bottom:8px}
+.app-logo-icon{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--green),var(--green-bright));display:flex;align-items:center;justify-content:center;color:#050807;font-weight:800;font-size:20px;font-family:'JetBrains Mono',monospace;box-shadow:0 4px 20px var(--green-s)}
+.app-title{font-size:26px;font-weight:800;letter-spacing:-.5px;background:linear-gradient(135deg,#f5fbf6,#a8b3a8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.app-subtitle{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-3);margin-top:3px}
+
+/* ── SECTION DIVIDER ── */
+.sec{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:2.5px;margin:22px 0 10px}
+.sec::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
+
+/* ── BUTTONS ── */
+.btn-primary{width:100%;padding:13px;border:none;border-radius:11px;background:linear-gradient(135deg,var(--green),var(--green-bright));color:#050807;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px var(--green-s)}.btn-primary:active{transform:scale(.98)}
+.btn-primary svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.btn-secondary{width:100%;padding:11px;border:1.5px solid var(--border);border-radius:10px;background:transparent;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:7px;-webkit-tap-highlight-color:transparent}
+.btn-secondary:hover{border-color:var(--green);color:var(--green);background:var(--green-d)}
+.btn-add{width:100%;padding:13px;background:transparent;border:1.5px dashed var(--border);border-radius:12px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--text-3);cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
+.btn-add:hover{border-color:var(--green);color:var(--green);background:var(--green-d)}
+.btn-add svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.btn-ghost{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid var(--border);border-radius:100px;background:transparent;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.btn-ghost:hover{border-color:var(--border-glow);color:var(--text-2)}
+.btn-ghost svg{width:12px;height:12px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── FORM FIELDS ── */
+.field{margin-bottom:10px}
+.field label{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px}
+.inp{width:100%;background:var(--bg-input);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--text-1);outline:none;transition:all .25s;-webkit-appearance:none;appearance:none}
+.inp::placeholder{color:var(--text-3)}.inp:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px var(--green-d)}
+.inp-row{display:flex;gap:8px}
+.inp-row .field{flex:1}
+
+/* ── DIRECTION TOGGLE ── */
+.dir-toggle{display:flex;gap:6px}
+.dir-btn{flex:1;padding:11px;border:1.5px solid var(--border);border-radius:11px;background:var(--bg-card);font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:var(--text-3);cursor:pointer;transition:all .25s;text-align:center;-webkit-tap-highlight-color:transparent}
+.dir-btn.long.active{background:var(--green-d);color:var(--green);border-color:var(--green-s);box-shadow:0 0 14px var(--green-d)}
+.dir-btn.short.active{background:var(--rose-d);color:var(--rose);border-color:var(--rose-s);box-shadow:0 0 14px var(--rose-d)}
+
+/* ── LEVERAGE QUICK ── */
+.lev-quick{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:7px}
+.lev-btn{padding:7px 3px;border:1.5px solid var(--border);border-radius:8px;background:transparent;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--text-3);cursor:pointer;transition:all .25s;text-align:center;-webkit-tap-highlight-color:transparent}
+.lev-btn:hover{border-color:var(--amber);color:var(--amber)}.lev-btn.active{border-color:var(--amber);color:var(--amber);background:var(--amber-d)}
+
+/* ── PRICE ROWS (form) ── */
+.price-row{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:7px;transition:border-color .25s}
+.price-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.price-label-grp{flex:1;min-width:0}
+.price-tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.price-inp-wrap{position:relative;flex-shrink:0}
+.price-inp{width:120px;background:var(--bg-input);border:1.5px solid var(--border);border-radius:9px;padding:8px 38px 8px 10px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--text-1);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.price-inp::placeholder{color:var(--text-3)}.price-inp:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px var(--green-d)}
+.price-unit{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-3);font-weight:600;pointer-events:none;letter-spacing:.5px}
+.price-del{background:none;border:none;cursor:pointer;color:var(--text-3);padding:5px;border-radius:6px;transition:all .2s;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center}
+.price-del:hover{color:var(--rose);background:var(--rose-d)}
+.price-del svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round}
+.e1 .price-dot{background:var(--green)}.e1 .price-tag{color:var(--green)}.e1 .price-inp:focus{border-color:var(--green)}
+.e2 .price-dot{background:#60a5fa}.e2 .price-tag{color:#60a5fa}.e2 .price-inp:focus{border-color:#60a5fa;box-shadow:0 0 0 3px #60a5fa18}
+.e3 .price-dot{background:#a78bfa}.e3 .price-tag{color:#a78bfa}.e3 .price-inp:focus{border-color:#a78bfa;box-shadow:0 0 0 3px #a78bfa18}
+.sl-row .price-dot{background:var(--rose)}.sl-row .price-tag{color:var(--rose)}.sl-row .price-inp:focus{border-color:var(--rose);box-shadow:0 0 0 3px var(--rose-d)}
+.tp-row .price-dot{background:var(--green)}.tp-row .price-tag{color:var(--green)}
+
+/* ── R:R LIVE BAR ── */
+.rr-bar{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-top:4px;display:none}
+.rr-bar.show{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.rr-item{display:flex;flex-direction:column;gap:1px;flex:1;min-width:60px}
+.rr-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1px}
+.rr-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-1)}
+.rr-val.green{color:var(--green)}.rr-val.rose{color:var(--rose)}.rr-val.amber{color:var(--amber)}
+.rr-sep{width:1px;height:28px;background:var(--border);flex-shrink:0}
+
+/* ── PANEL ── */
+.panel{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px;transition:border-color .3s}
+.panel:hover{border-color:var(--border-glow)}
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.panel-title{font-size:17px;font-weight:700;color:var(--text-1)}
+.panel-close{background:none;border:none;cursor:pointer;color:var(--text-3);padding:5px;border-radius:7px;transition:color .2s;-webkit-tap-highlight-color:transparent;display:flex;align-items:center}
+.panel-close:hover{color:var(--rose)}.panel-close svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── CAPITAL CARD ── */
+.bt-cap-card{position:relative;background:var(--bg-card);border:1.5px solid #16c78430;border-radius:18px;padding:22px;overflow:hidden;margin-bottom:14px;transition:all .35s}
+.bt-cap-card:hover{border-color:var(--green);box-shadow:0 0 30px #16c78412}
+.bt-cap-glow{position:absolute;top:-60%;right:-15%;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,var(--green) 0%,transparent 70%);opacity:.09;pointer-events:none}
+.bt-cap-name{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:2.5px;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.bt-cap-name .dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
+.bt-cap-main{display:flex;align-items:baseline;gap:7px;margin-bottom:4px}
+.bt-cap-num{font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:800;color:var(--green);line-height:1;letter-spacing:-2px}
+.bt-cap-unit{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--green);opacity:.6}
+.bt-cap-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);margin-bottom:16px;letter-spacing:.3px}
+.bt-cap-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bt-cap-stat{background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.bt-cap-stat-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:5px}
+.bt-cap-stat-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--text-1)}
+.bt-cap-stat-val.pos{color:var(--green)}.bt-cap-stat-val.neg{color:var(--rose)}
+.bt-progress{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:14px}
+.bt-progress-fill{height:100%;border-radius:2px;transition:width .9s cubic-bezier(.16,1,.3,1)}
+.bt-progress-fill.pos{background:linear-gradient(90deg,var(--green),var(--green-bright))}.bt-progress-fill.neg{background:var(--rose)}
+
+/* ── BACKTESTING LIST CHIP ── */
+.bt-chip{display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:15px;margin-bottom:8px;cursor:pointer;transition:all .25s;-webkit-tap-highlight-color:transparent;opacity:0;animation:fadeUp .5s cubic-bezier(.16,1,.3,1) forwards}
+.bt-chip:hover{border-color:var(--border-glow);transform:translateY(-1px)}
+.bt-chip-icon{width:42px;height:42px;border-radius:11px;background:var(--green-d);border:1px solid #16c78430;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:800;color:var(--green);flex-shrink:0}
+.bt-chip-body{flex:1;min-width:0}
+.bt-chip-name{font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-chip-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:.3px}
+.bt-chip-pnl{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;flex-shrink:0;text-align:right}
+.bt-chip-pnl.pos{color:var(--green)}.bt-chip-pnl.neg{color:var(--rose)}.bt-chip-pnl.zero{color:var(--text-3)}
+.bt-chip-del{background:none;border:none;cursor:pointer;color:var(--text-3);padding:6px;border-radius:7px;transition:all .2s;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center}
+.bt-chip-del:hover{color:var(--rose);background:var(--rose-d)}.bt-chip-del svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round}
+
+/* ── POSITION CARD ── */
+.pos-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden;transition:border-color .3s;opacity:0;animation:fadeUp .4s cubic-bezier(.16,1,.3,1) forwards}
+.pos-card:hover{border-color:var(--border-glow)}
+.pos-card.win{border-color:#16c78428}.pos-card.loss{border-color:#ea394322}.pos-card.closed{opacity:.8}
+.pos-head{display:flex;align-items:center;gap:10px;padding:14px 14px 14px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;position:relative}
+.pos-dir-badge{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;flex-shrink:0}
+.pos-dir-badge.long{background:var(--green-d);color:var(--green)}.pos-dir-badge.short{background:var(--rose-d);color:var(--rose)}
+.pos-body{flex:1;min-width:0}
+.pos-title{font-size:14px;font-weight:700;color:var(--text-1);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.pos-idx{font-size:10px;font-weight:500;color:var(--text-3);font-family:'JetBrains Mono',monospace}
+.pos-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:.3px}
+.pos-pnl{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;flex-shrink:0}
+.pos-pnl.pos{color:var(--green)}.pos-pnl.neg{color:var(--rose)}.pos-pnl.muted{color:var(--text-3)}
+.pos-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-left:2px}
+.pos-status-dot.open{background:var(--amber);animation:pulse 2s ease-in-out infinite}
+.pos-status-dot.win{background:var(--green)}.pos-status-dot.loss{background:var(--rose)}
+.pos-del-btn{background:none;border:none;cursor:pointer;color:var(--text-3);padding:6px;border-radius:7px;transition:all .2s;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center}
+.pos-del-btn:hover{color:var(--rose);background:var(--rose-d)}.pos-del-btn svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round}
+.pos-chevron{flex-shrink:0;transition:transform .3s cubic-bezier(.16,1,.3,1)}
+.pos-card.expanded .pos-chevron{transform:rotate(180deg)}
+.pos-chevron svg{width:14px;height:14px;stroke:var(--text-3);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── POSITION DETAIL (simulation) ── */
+.pos-detail{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.16,1,.3,1)}
+.pos-detail.open{max-height:4000px}
+.pos-detail-inner{padding:14px;border-top:1px solid var(--border);background:var(--bg-input);display:flex;flex-direction:column;gap:6px}
+
+/* ── SIM ROWS ── */
+.sim-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:2px;display:flex;align-items:center;gap:8px;margin:6px 0 4px}
+.sim-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.sim-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:11px;transition:all .25s}
+.sim-row.hit-green{border-color:#16c78432;background:var(--green-d)}
+.sim-row.hit-rose{border-color:#ea394330;background:var(--rose-d)}
+.sim-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sim-body{flex:1;min-width:0}
+.sim-tag{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.sim-price{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--text-1);margin-top:1px}
+.sim-side-info{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text-3);text-align:right;flex-shrink:0}
+.sim-side-info.pos{color:var(--green)}.sim-side-info.neg{color:var(--rose)}
+
+/* HIT BUTTON */
+.hit-btn{width:34px;height:34px;border-radius:9px;border:1.5px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-3);transition:all .2s;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.hit-btn:hover{border-color:var(--border-glow);color:var(--text-2)}
+.hit-btn.on-green{background:var(--green-d);border-color:#16c78440;color:var(--green)}
+.hit-btn.on-rose{background:var(--rose-d);border-color:#ea394340;color:var(--rose)}
+.hit-btn svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── CALC BAR ── */
+.calc-bar{display:flex;gap:0;background:var(--bg-card);border:1px solid var(--border);border-radius:11px;overflow:hidden}
+.calc-cell{flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.calc-cell+.calc-cell{border-left:1px solid var(--border)}
+.calc-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1px}
+.calc-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-1)}
+.calc-val.green{color:var(--green)}.calc-val.rose{color:var(--rose)}.calc-val.amber{color:var(--amber)}
+
+/* ── CLOSE CONTROLS ── */
+.close-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:11px;overflow:hidden}
+.close-panel-head{padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid var(--border)}
+.close-panel-body{padding:12px}
+.close-inp-row{display:flex;gap:8px}
+.close-inp{flex:1;background:var(--bg-input);border:1.5px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--text-1);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.close-inp:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-d)}.close-inp::placeholder{color:var(--text-3)}
+.close-inp:disabled{opacity:.4;cursor:not-allowed}
+.close-btn{padding:10px 16px;background:var(--amber);border:none;border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#050807;cursor:pointer;transition:all .25s;flex-shrink:0;-webkit-tap-highlight-color:transparent;white-space:nowrap}
+.close-btn:hover{background:#ffc400}.close-btn:disabled{opacity:.4;cursor:not-allowed}
+.close-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);margin-top:6px;text-align:center}
+
+/* ── PNL SUMMARY ── */
+.pnl-card{border-radius:14px;padding:18px;text-align:center;position:relative;overflow:hidden}
+.pnl-card.pos{background:linear-gradient(145deg,var(--green-d),transparent);border:1.5px solid #16c78430}
+.pnl-card.pos::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:50%;height:1px;background:linear-gradient(90deg,transparent,#16c78460,transparent)}
+.pnl-card.neg{background:linear-gradient(145deg,var(--rose-d),transparent);border:1.5px solid #ea394328}
+.pnl-card-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.pnl-card-amt{font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:800;line-height:1;margin-bottom:5px;letter-spacing:-1px}
+.pnl-card-amt.pos{color:var(--green)}.pnl-card-amt.neg{color:var(--rose)}
+.pnl-card-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-3)}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 20px;color:var(--text-3)}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:.5}
+.empty-text{font-size:13px;color:var(--text-3);margin-bottom:4px}
+.empty-sub{font-size:11px;color:var(--text-3);opacity:.7}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);z-index:999;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:10px 22px;border-radius:100px;opacity:0;pointer-events:none;transition:all .4s cubic-bezier(.16,1,.3,1);white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--green);color:#050807;box-shadow:0 4px 22px var(--green-s)}
+.toast.err{background:var(--rose);color:#fff;box-shadow:0 4px 22px var(--rose-s)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:500px){
+  .container{padding:16px 10px 60px}
+  .app-title{font-size:22px}
+  .bt-cap-num{font-size:36px}
+  .inp-row{flex-direction:column}
+  .price-inp{width:106px}
+  .bt-cap-stats{grid-template-columns:1fr 1fr;gap:6px}
+  .lev-quick{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══ HEADER ══ -->
+  <div class="app-header">
+    <div><a href="index.html" class="back-link">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Trading Hub
+    </a></div>
+    <div class="app-logo">
+      <div class="app-logo-icon">B</div>
+      <div>
+        <div class="app-title">Backtesting</div>
+        <div class="app-subtitle">Simulación de estrategias</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VIEW: LISTA ══ -->
+  <div id="viewList">
+    <div class="panel" style="opacity:0;animation:fadeUp .5s .1s cubic-bezier(.16,1,.3,1) forwards">
+      <div class="panel-header">
+        <div class="panel-title">Nuevo Backtesting</div>
+      </div>
+      <div class="field">
+        <label>Nombre</label>
+        <input class="inp" id="newName" placeholder="Ej: BTC Scalp Mayo 2025" />
+      </div>
+      <div class="inp-row">
+        <div class="field">
+          <label>Capital Inicial (USDT)</label>
+          <input class="inp" id="newCapital" type="number" min="0" placeholder="10000" />
+        </div>
+      </div>
+      <button class="btn-primary" id="btnCreate" style="margin-top:6px">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Crear Backtesting
+      </button>
+    </div>
+
+    <div class="sec" style="opacity:0;animation:fadeUp .5s .2s cubic-bezier(.16,1,.3,1) forwards">Sesiones guardadas</div>
+    <div id="btList"></div>
+  </div>
+
+  <!-- ══ VIEW: DETALLE ══ -->
+  <div id="viewDetail" style="display:none">
+    <button class="back-link" id="btnBack" style="margin-bottom:16px;cursor:pointer;border:none;font-family:'JetBrains Mono',monospace;font-size:10px">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Todos los backtestings
+    </button>
+
+    <!-- Capital card -->
+    <div class="bt-cap-card">
+      <div class="bt-cap-glow"></div>
+      <div class="bt-cap-name"><span class="dot"></span><span id="dName">—</span></div>
+      <div class="bt-cap-main">
+        <div class="bt-cap-num" id="dCapital">0</div>
+        <div class="bt-cap-unit">USDT</div>
+      </div>
+      <div class="bt-cap-sub" id="dCapSub">Capital actual</div>
+      <div class="bt-cap-stats">
+        <div class="bt-cap-stat">
+          <div class="bt-cap-stat-lbl">Capital Inicial</div>
+          <div class="bt-cap-stat-val" id="dInitial">—</div>
+        </div>
+        <div class="bt-cap-stat">
+          <div class="bt-cap-stat-lbl">PnL Total</div>
+          <div class="bt-cap-stat-val" id="dPnl">—</div>
+        </div>
+        <div class="bt-cap-stat">
+          <div class="bt-cap-stat-lbl">Posiciones</div>
+          <div class="bt-cap-stat-val" id="dCount">0</div>
+        </div>
+      </div>
+      <div class="bt-progress">
+        <div class="bt-progress-fill pos" id="dProgress" style="width:50%"></div>
+      </div>
+    </div>
+
+    <!-- Nueva posición button -->
+    <button class="btn-add" id="btnAddPos">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nueva Posición
+    </button>
+
+    <!-- Formulario de nueva posición -->
+    <div id="posForm" style="display:none;margin-top:12px">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Configurar Posición</div>
+          <button class="panel-close" id="btnCloseForm">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Dirección -->
+        <div class="field">
+          <label>Dirección</label>
+          <div class="dir-toggle">
+            <button class="dir-btn long active" id="fDirLong">▲ Long</button>
+            <button class="dir-btn short" id="fDirShort">▼ Short</button>
+          </div>
+        </div>
+
+        <!-- Capital & Leverage -->
+        <div class="inp-row" style="margin-top:10px">
+          <div class="field">
+            <label>Capital (USDT)</label>
+            <input class="inp" id="fCapital" type="number" min="0" placeholder="500" />
+          </div>
+          <div class="field">
+            <label>Apalancamiento</label>
+            <input class="inp" id="fLev" type="number" min="1" placeholder="10" />
+          </div>
+        </div>
+        <div class="lev-quick" id="levBtns">
+          <button class="lev-btn" data-lev="3">3×</button>
+          <button class="lev-btn" data-lev="5">5×</button>
+          <button class="lev-btn" data-lev="10">10×</button>
+          <button class="lev-btn" data-lev="20">20×</button>
+          <button class="lev-btn" data-lev="50">50×</button>
+          <button class="lev-btn" data-lev="100">100×</button>
+        </div>
+
+        <!-- Entradas -->
+        <div class="sec" style="margin-top:20px;margin-bottom:8px">Zonas de Entrada</div>
+        <div id="fEntries"></div>
+        <button class="btn-add" id="btnAddEntry" style="padding:9px">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Añadir entrada (máx. 3)
+        </button>
+
+        <!-- Stop Loss -->
+        <div class="sec" style="margin-top:18px;margin-bottom:8px">Stop Loss</div>
+        <div class="price-row sl-row">
+          <div class="price-dot" style="background:var(--rose)"></div>
+          <div class="price-label-grp">
+            <div class="price-tag" style="color:var(--rose)">Stop Loss</div>
+          </div>
+          <div class="price-inp-wrap">
+            <input class="price-inp" id="fSl" type="number" min="0" placeholder="0.00" />
+            <span class="price-unit">USDT</span>
+          </div>
+        </div>
+
+        <!-- R:R live -->
+        <div class="rr-bar" id="rrBar">
+          <div class="rr-item"><div class="rr-lbl">Avg Entrada</div><div class="rr-val" id="rrEntry">—</div></div>
+          <div class="rr-sep"></div>
+          <div class="rr-item"><div class="rr-lbl">Riesgo (SL)</div><div class="rr-val rose" id="rrRisk">—</div></div>
+          <div class="rr-sep"></div>
+          <div class="rr-item"><div class="rr-lbl">Notional</div><div class="rr-val amber" id="rrNotional">—</div></div>
+        </div>
+
+        <!-- Take Profits -->
+        <div class="sec" style="margin-top:18px;margin-bottom:8px">Take Profits</div>
+        <div id="fTPs"></div>
+        <button class="btn-add" id="btnAddTP" style="padding:9px">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Añadir TP
+        </button>
+
+        <button class="btn-primary" id="btnSavePos" style="margin-top:22px">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Guardar Posición
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista de posiciones -->
+    <div class="sec" id="posSec" style="margin-top:4px">Posiciones</div>
+    <div id="posList"></div>
+  </div>
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── Utilidades ──────────────────────────────────────────── */
+const $  = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const fmt = n => (n == null || isNaN(n)) ? '—' : new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const fmtPct = n => (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+
+function toast(msg, type = 'ok') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = `toast ${type}`;
+  void el.offsetWidth;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+/* ── Almacenamiento ──────────────────────────────────────── */
+const KEY = 'bt-sessions-v1';
+let sessions = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } })();
+function persist() { localStorage.setItem(KEY, JSON.stringify(sessions)); }
+
+/* ── Estado ──────────────────────────────────────────────── */
+let activeId  = null;
+let formDir   = 'long';
+let fEntries  = [];   // [{id, price:''}]
+let fTPs      = [];   // [{id, price:''}]
+let eCtr = 0, tCtr = 0;
+const expanded = new Set(); // posición ids expandidas
+
+/* ── Cálculo PnL ─────────────────────────────────────────── */
+function calcPnL(pos) {
+  const hitE = pos.entries.filter(e => e.hit);
+  if (!hitE.length) return 0;
+
+  const avgEntry   = hitE.reduce((s, e) => s + e.price, 0) / hitE.length;
+  const portion    = hitE.length / pos.entries.length;          // fracción de posición activa
+  const notional   = pos.capital * pos.leverage * portion;
+
+  const nTPs  = pos.tps.length;
+  const tpW   = nTPs > 0 ? 1 / nTPs : 0;                       // peso igual por cada TP
+  let pnl     = 0;
+  let rem     = 1.0;                                             // parte del notional sin cerrar
+
+  // Parciales en TPs
+  for (const tp of pos.tps) {
+    if (!tp.hit) continue;
+    const Δ = pos.dir === 'long'
+      ? (tp.price - avgEntry) / avgEntry
+      : (avgEntry - tp.price) / avgEntry;
+    pnl += notional * tpW * Δ;
+    rem -= tpW;
+  }
+
+  // Cierre final en la parte restante
+  if (rem > 0.0001) {
+    let closePrice = null;
+    if (pos.slHit)                         closePrice = pos.sl;
+    else if (pos.manualClose?.price)       closePrice = pos.manualClose.price;
+
+    if (closePrice !== null) {
+      const Δ = pos.dir === 'long'
+        ? (closePrice - avgEntry) / avgEntry
+        : (avgEntry - closePrice) / avgEntry;
+      pnl += notional * rem * Δ;
+    }
+  }
+
+  return pnl;
+}
+
+function getSession()  { return sessions.find(s => s.id === activeId); }
+
+function calcCurrent(s) {
+  return s.initialCapital + s.positions
+    .filter(p => p.status === 'closed')
+    .reduce((sum, p) => sum + (p.pnl ?? 0), 0);
+}
+
+function calcTotalPnL(s) {
+  return s.positions
+    .filter(p => p.status === 'closed')
+    .reduce((sum, p) => sum + (p.pnl ?? 0), 0);
+}
+
+/* ── Render: lista de sesiones ───────────────────────────── */
+function renderList() {
+  const el = $('btList');
+  if (!sessions.length) {
+    el.innerHTML = `<div class="empty">
+      <div class="empty-icon">📊</div>
+      <div class="empty-text">Aún no tienes sesiones de backtesting</div>
+      <div class="empty-sub">Crea una arriba para empezar</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = sessions.map((s, i) => {
+    const cur    = calcCurrent(s);
+    const pnl    = calcTotalPnL(s);
+    const pnlPct = s.initialCapital ? pnl / s.initialCapital * 100 : 0;
+    const cls    = pnl > 0 ? 'pos' : pnl < 0 ? 'neg' : 'zero';
+    const open   = s.positions.filter(p => p.status === 'open').length;
+    const initials = s.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'BT';
+    return `<div class="bt-chip" data-id="${esc(s.id)}" style="animation-delay:${i * 0.05}s">
+      <div class="bt-chip-icon">${esc(initials)}</div>
+      <div class="bt-chip-body">
+        <div class="bt-chip-name">${esc(s.name)}</div>
+        <div class="bt-chip-meta">
+          ${fmt(s.initialCapital)} USDT inicial&nbsp;·&nbsp;${s.positions.length} pos${open ? `&nbsp;·&nbsp;<span style="color:var(--amber)">${open} abierta${open>1?'s':''}</span>` : ''}
+        </div>
+      </div>
+      <div>
+        <div class="bt-chip-pnl ${cls}">${pnl !== 0 ? (pnl>0?'+':'') + fmt(pnl) : '—'}</div>
+        ${pnl !== 0 ? `<div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-align:right;color:var(--text-3)">${fmtPct(pnlPct)}</div>` : ''}
+      </div>
+      <button class="bt-chip-del" data-del="${esc(s.id)}" title="Eliminar sesión">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+/* ── Render: cabecera detalle ────────────────────────────── */
+function renderHeader() {
+  const s    = getSession(); if (!s) return;
+  const cur  = calcCurrent(s);
+  const pnl  = calcTotalPnL(s);
+  const pct  = s.initialCapital ? pnl / s.initialCapital * 100 : 0;
+  const cls  = pnl >= 0 ? 'pos' : 'neg';
+
+  $('dName').textContent    = s.name;
+  $('dCapital').textContent = fmt(cur);
+  $('dCapSub').textContent  = 'Capital actual · ' + (pnl >= 0 ? '+' : '') + fmtPct(pct);
+  $('dInitial').textContent = fmt(s.initialCapital) + ' USDT';
+  $('dPnl').textContent     = (pnl >= 0 ? '+' : '') + fmt(pnl) + ' USDT';
+  $('dPnl').className       = 'bt-cap-stat-val ' + cls;
+  $('dCount').textContent   = s.positions.length;
+
+  const prog = Math.min(100, Math.max(2, cur / s.initialCapital * 100));
+  $('dProgress').style.width = prog + '%';
+  $('dProgress').className   = 'bt-progress-fill ' + cls;
+}
+
+/* ── Render: posiciones ──────────────────────────────────── */
+function renderPositions() {
+  const s  = getSession();
+  const el = $('posList');
+  if (!s || !s.positions.length) {
+    el.innerHTML = `<div class="empty" style="padding:30px 20px">
+      <div class="empty-icon">📉</div>
+      <div class="empty-text">Sin posiciones todavía</div>
+      <div class="empty-sub">Pulsa "Nueva Posición" para empezar</div>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = s.positions.map((pos, idx) => buildCard(pos, idx)).join('');
+
+  // Bind eventos
+  s.positions.forEach(pos => {
+    const head   = document.querySelector(`#pc-${pos.id} .pos-head`);
+    const detail = $(`pd-${pos.id}`);
+    if (head && detail) {
+      head.addEventListener('click', e => {
+        if (e.target.closest('[data-action]') || e.target.closest('.pos-del-btn')) return;
+        const card = $(`pc-${pos.id}`);
+        if (expanded.has(pos.id)) {
+          expanded.delete(pos.id);
+          detail.classList.remove('open');
+          card.classList.remove('expanded');
+        } else {
+          expanded.add(pos.id);
+          detail.classList.add('open');
+          card.classList.add('expanded');
+        }
+      });
+    }
+    // Restaurar estado expandido
+    if (expanded.has(pos.id)) {
+      detail?.classList.add('open');
+      $(`pc-${pos.id}`)?.classList.add('expanded');
+    }
+  });
+}
+
+function buildCard(pos, idx) {
+  const hitE    = pos.entries.filter(e => e.hit);
+  const avgE    = hitE.length ? hitE.reduce((s,e)=>s+e.price,0)/hitE.length : null;
+  const pnl     = pos.pnl ?? 0;
+  const pnlCls  = pnl > 0 ? 'pos' : pnl < 0 ? 'neg' : 'muted';
+  const dotCls  = pos.status === 'closed' ? (pnl >= 0 ? 'win' : 'loss') : 'open';
+  const cardCls = pos.status === 'closed' ? (pnl >= 0 ? 'win' : 'loss') + ' closed' : '';
+  const hitTPs  = pos.tps.filter(t => t.hit).length;
+
+  const meta = [];
+  if (pos.leverage)      meta.push(pos.leverage + '×');
+  if (pos.capital)       meta.push(fmt(pos.capital) + ' USDT');
+  if (avgE)              meta.push('avg ' + fmt(avgE));
+  if (pos.status === 'closed') {
+    if (pos.slHit)                      meta.push('SL');
+    else if (pos.manualClose?.price)    meta.push('Cierre ' + fmt(pos.manualClose.price));
+    else if (hitTPs)                    meta.push(hitTPs + '/' + pos.tps.length + ' TPs');
+  }
+
+  return `<div class="pos-card ${cardCls}" id="pc-${pos.id}">
+    <div class="pos-head">
+      <div class="pos-dir-badge ${pos.dir}">${pos.dir === 'long' ? 'L' : 'S'}</div>
+      <div class="pos-body">
+        <div class="pos-title">
+          Posición
+          <span class="pos-idx">#${idx + 1}</span>
+        </div>
+        <div class="pos-meta">${meta.join(' · ') || 'Sin configurar'}</div>
+      </div>
+      <div class="pos-status-dot ${dotCls}"></div>
+      <div class="pos-pnl ${pnlCls}">
+        ${pos.status === 'closed' ? (pnl >= 0 ? '+' : '') + fmt(pnl) : 'Abierta'}
+      </div>
+      <button class="pos-del-btn" data-posid="${esc(pos.id)}" title="Eliminar">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+      <div class="pos-chevron">
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <div class="pos-detail" id="pd-${pos.id}">
+      <div class="pos-detail-inner">${buildSim(pos)}</div>
+    </div>
+  </div>`;
+}
+
+function buildSim(pos) {
+  const eColors = ['var(--green)', '#60a5fa', '#a78bfa'];
+  const eNames  = ['E1', 'E2', 'E3'];
+  const hitE    = pos.entries.filter(e => e.hit);
+  const avgE    = hitE.length ? hitE.reduce((s,e)=>s+e.price,0)/hitE.length : null;
+  const portFill= pos.entries.length ? hitE.length / pos.entries.length : 0;
+  const notional= avgE ? pos.capital * pos.leverage * portFill : 0;
+  const nTPs    = pos.tps.length;
+  const tpW     = nTPs > 0 ? 1 / nTPs : 0;
+  const hitTPs  = pos.tps.filter(t=>t.hit).length;
+  const remPart = 1 - hitTPs * tpW;                             // porción restante sin cerrar
+  const isOpen  = pos.status === 'open';
+
+  /* ─ Entradas ─ */
+  const entriesHTML = pos.entries.map((e, i) => {
+    const rowCls = e.hit ? 'hit-green' : '';
+    return `<div class="sim-row ${rowCls}">
+      <div class="sim-dot" style="background:${eColors[i]}"></div>
+      <div class="sim-body">
+        <div class="sim-tag" style="color:${eColors[i]}">${eNames[i]}</div>
+        <div class="sim-price">${fmt(e.price)} USDT</div>
+      </div>
+      ${isOpen
+        ? `<button class="hit-btn ${e.hit?'on-green':''}" data-action="entry" data-posid="${esc(pos.id)}" data-xid="${esc(e.id)}" title="${e.hit?'Quitar':'Marcar tocada'}">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+           </button>`
+        : `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${e.hit?'var(--green)':'var(--text-3)'}">${e.hit?'✓':'—'}</span>`
+      }
+    </div>`;
+  }).join('');
+
+  /* ─ Barra de cálculo ─ */
+  let calcHTML = '';
+  if (avgE) {
+    calcHTML = `<div class="calc-bar">
+      <div class="calc-cell">
+        <div class="calc-lbl">Avg Entrada</div>
+        <div class="calc-val">${fmt(avgE)}</div>
+      </div>
+      <div class="calc-cell">
+        <div class="calc-lbl">Notional</div>
+        <div class="calc-val amber">${fmt(notional)}</div>
+      </div>
+      <div class="calc-cell">
+        <div class="calc-lbl">Llena</div>
+        <div class="calc-val">${hitE.length}/${pos.entries.length}</div>
+      </div>
+    </div>`;
+  }
+
+  /* ─ TPs ─ */
+  let tpsHTML = '';
+  if (nTPs) {
+    const tpRows = pos.tps.map((tp, i) => {
+      let sideInfo = '';
+      if (avgE) {
+        const Δ = pos.dir === 'long' ? (tp.price - avgE)/avgE : (avgE - tp.price)/avgE;
+        const partPnL = notional * tpW * Δ;
+        sideInfo = `<div class="sim-side-info ${partPnL>=0?'pos':'neg'}">${partPnL>=0?'+':''}${fmt(partPnL)}</div>`;
+      }
+      const rowCls = tp.hit ? 'hit-green' : '';
+      return `<div class="sim-row ${rowCls}">
+        <div class="sim-dot" style="background:var(--green)"></div>
+        <div class="sim-body">
+          <div class="sim-tag" style="color:var(--green)">TP${i+1}</div>
+          <div class="sim-price">${fmt(tp.price)} USDT</div>
+        </div>
+        ${sideInfo}
+        ${isOpen
+          ? `<button class="hit-btn ${tp.hit?'on-green':''}" data-action="tp" data-posid="${esc(pos.id)}" data-xid="${esc(tp.id)}" title="${tp.hit?'Quitar':'TP tocado'}">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+             </button>`
+          : `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${tp.hit?'var(--green)':'var(--text-3)'}">${tp.hit?'✓':'—'}</span>`
+        }
+      </div>`;
+    }).join('');
+    tpsHTML = `<div class="sim-label">Take Profits</div>${tpRows}`;
+  }
+
+  /* ─ SL ─ */
+  let slHTML = '';
+  if (pos.sl) {
+    let slSide = '';
+    if (avgE) {
+      const Δ = pos.dir === 'long' ? (pos.sl - avgE)/avgE : (avgE - pos.sl)/avgE;
+      const slPnL = notional * remPart * Δ;
+      slSide = `<div class="sim-side-info neg">${fmt(slPnL)}</div>`;
+    }
+    const rowCls = pos.slHit ? 'hit-rose' : '';
+    slHTML = `<div class="sim-label">Stop Loss</div>
+    <div class="sim-row ${rowCls}">
+      <div class="sim-dot" style="background:var(--rose)"></div>
+      <div class="sim-body">
+        <div class="sim-tag" style="color:var(--rose)">Stop Loss</div>
+        <div class="sim-price">${fmt(pos.sl)} USDT</div>
+      </div>
+      ${slSide}
+      ${isOpen
+        ? `<button class="hit-btn ${pos.slHit?'on-rose':''}" data-action="sl" data-posid="${esc(pos.id)}" title="${pos.slHit?'Quitar SL':'SL Tocado'}">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+           </button>`
+        : (pos.slHit ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--rose)">✗</span>` : '')
+      }
+    </div>`;
+  }
+
+  /* ─ Panel de cierre manual ─ */
+  let closeHTML = '';
+  if (isOpen) {
+    const canClose = hitE.length > 0;
+    closeHTML = `<div class="close-panel">
+      <div class="close-panel-head">Cerrar posición en precio</div>
+      <div class="close-panel-body">
+        <div class="close-inp-row">
+          <input class="close-inp" id="ci-${pos.id}" type="number" min="0" placeholder="Precio de cierre" ${!canClose?'disabled':''} />
+          <button class="close-btn" data-action="close" data-posid="${esc(pos.id)}" ${!canClose?'disabled':''}>
+            Cerrar
+          </button>
+        </div>
+        ${!canClose ? `<div class="close-hint">Marca al menos una entrada como tocada primero</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  /* ─ PnL final (posición cerrada) ─ */
+  let pnlHTML = '';
+  if (!isOpen) {
+    const pnl    = pos.pnl ?? 0;
+    const pnlCls = pnl >= 0 ? 'pos' : 'neg';
+    const pnlPct = pos.capital ? pnl / pos.capital * 100 : 0;
+    pnlHTML = `<div class="pnl-card ${pnlCls}">
+      <div class="pnl-card-lbl">Resultado de la posición</div>
+      <div class="pnl-card-amt ${pnlCls}">${pnl>=0?'+':''}${fmt(pnl)} USDT</div>
+      <div class="pnl-card-sub">${pnl>=0?'+':''}${pnlPct.toFixed(2)}% sobre margen · ${pos.dir.toUpperCase()} ${pos.leverage}×</div>
+    </div>`;
+  }
+
+  return `<div class="sim-label" style="margin-top:0">Entradas</div>
+    ${entriesHTML}
+    ${calcHTML}
+    ${tpsHTML}
+    ${slHTML}
+    ${closeHTML}
+    ${pnlHTML}`;
+}
+
+function renderDetail() {
+  renderHeader();
+  renderPositions();
+}
+
+/* ── Acciones de simulación ──────────────────────────────── */
+function simAction(action, posId, xId) {
+  const s = getSession(); if (!s) return;
+  const pos = s.positions.find(p => p.id === posId); if (!pos) return;
+
+  if (action === 'entry') {
+    const e = pos.entries.find(en => en.id === xId); if (!e) return;
+    e.hit = !e.hit;
+    // Si se des-marca una entrada, resetear el cierre
+    pos.slHit = false;
+    pos.manualClose = null;
+    pos.tps.forEach(t => t.hit = false);
+    pos.status = 'open';
+    pos.pnl = 0;
+
+  } else if (action === 'tp') {
+    const hitE = pos.entries.filter(e => e.hit);
+    if (!hitE.length) { toast('Marca al menos una entrada primero', 'err'); return; }
+    const tp = pos.tps.find(t => t.id === xId); if (!tp) return;
+    tp.hit = !tp.hit;
+    pos.pnl = calcPnL(pos);
+    // Auto-cerrar si todos los TPs están marcados
+    if (pos.tps.length && pos.tps.every(t => t.hit)) {
+      pos.status = 'closed';
+    }
+
+  } else if (action === 'sl') {
+    const hitE = pos.entries.filter(e => e.hit);
+    if (!hitE.length) { toast('Marca al menos una entrada primero', 'err'); return; }
+    if (!pos.sl)      { toast('No hay SL configurado', 'err'); return; }
+    pos.slHit = !pos.slHit;
+    pos.manualClose = null;
+    pos.pnl = calcPnL(pos);
+    pos.status = pos.slHit ? 'closed' : 'open';
+    if (!pos.slHit && pos.tps.every(t => t.hit) && pos.tps.length) pos.status = 'closed';
+
+  } else if (action === 'close') {
+    const hitE = pos.entries.filter(e => e.hit);
+    if (!hitE.length) { toast('Marca al menos una entrada primero', 'err'); return; }
+    const inp = $(`ci-${posId}`);
+    const price = parseFloat(inp?.value);
+    if (!price || price <= 0) { toast('Precio de cierre inválido', 'err'); return; }
+    pos.slHit = false;
+    pos.manualClose = { price };
+    pos.pnl = calcPnL(pos);
+    pos.status = 'closed';
+  }
+
+  persist();
+  renderDetail();
+}
+
+/* ── Crear sesión ────────────────────────────────────────── */
+function createSession() {
+  const name    = $('newName').value.trim();
+  const capital = parseFloat($('newCapital').value);
+  if (!name)          { toast('Escribe un nombre', 'err'); return; }
+  if (!capital || capital <= 0) { toast('Capital inicial inválido', 'err'); return; }
+  const s = { id: uid(), name, initialCapital: capital, createdAt: new Date().toISOString(), positions: [] };
+  sessions.unshift(s);
+  persist();
+  $('newName').value    = '';
+  $('newCapital').value = '';
+  renderList();
+  toast('Backtesting creado', 'ok');
+}
+
+/* ── Abrir / cerrar detalle ──────────────────────────────── */
+function openSession(id) {
+  activeId = id;
+  expanded.clear();
+  $('viewList').style.display   = 'none';
+  $('viewDetail').style.display = 'block';
+  $('posForm').style.display    = 'none';
+  $('btnAddPos').style.display  = 'flex';
+  initForm();
+  renderDetail();
+}
+
+function backToList() {
+  activeId  = null;
+  $('viewList').style.display   = 'block';
+  $('viewDetail').style.display = 'none';
+  renderList();
+}
+
+/* ── Formulario de posición ──────────────────────────────── */
+function initForm() {
+  fEntries = [{ id: 'e' + (++eCtr), price: '' }];
+  fTPs     = [{ id: 't' + (++tCtr), price: '' }];
+  formDir  = 'long';
+  $('fDirLong').classList.add('active');
+  $('fDirShort').classList.remove('active');
+  $('fSl').value  = '';
+  $('fLev').value = '';
+  document.querySelectorAll('.lev-btn').forEach(b => b.classList.remove('active'));
+  // Capital por defecto: 2% del capital actual
+  const s = getSession();
+  if (s) $('fCapital').value = Math.round(calcCurrent(s) * 0.02);
+  else   $('fCapital').value = '';
+  renderFEntries();
+  renderFTPs();
+  updateRR();
+}
+
+const eColors = ['var(--green)', '#60a5fa', '#a78bfa'];
+const eNames  = ['E1', 'E2', 'E3'];
+
+function renderFEntries() {
+  $('fEntries').innerHTML = fEntries.map((e, i) => `
+    <div class="price-row e${i+1}">
+      <div class="price-dot" style="background:${eColors[i]}"></div>
+      <div class="price-label-grp"><div class="price-tag" style="color:${eColors[i]}">${eNames[i]}</div></div>
+      <div class="price-inp-wrap">
+        <input class="price-inp entry-inp" data-eid="${e.id}" type="number" min="0" placeholder="0.00" value="${e.price||''}" />
+        <span class="price-unit">USDT</span>
+      </div>
+      ${i > 0 ? `<button class="price-del" data-del-e="${e.id}">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>` : ''}
+    </div>
+  `).join('');
+  $('btnAddEntry').style.display = fEntries.length >= 3 ? 'none' : 'flex';
+}
+
+function renderFTPs() {
+  $('fTPs').innerHTML = fTPs.map((tp, i) => `
+    <div class="price-row tp-row">
+      <div class="price-dot" style="background:var(--green)"></div>
+      <div class="price-label-grp"><div class="price-tag" style="color:var(--green)">TP${i+1}</div></div>
+      <div class="price-inp-wrap">
+        <input class="price-inp tp-inp" data-tid="${tp.id}" type="number" min="0" placeholder="0.00" value="${tp.price||''}" />
+        <span class="price-unit">USDT</span>
+      </div>
+      <button class="price-del" data-del-t="${tp.id}">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+function updateRR() {
+  const prices = fEntries.map(e => parseFloat(e.price)).filter(v => v > 0);
+  const sl     = parseFloat($('fSl')?.value);
+  const lev    = parseFloat($('fLev')?.value) || 1;
+  const cap    = parseFloat($('fCapital')?.value) || 0;
+  const bar    = $('rrBar');
+  if (!bar) return;
+
+  if (!prices.length || !sl || !cap) { bar.classList.remove('show'); return; }
+  const avgE    = prices.reduce((a,b) => a+b, 0) / prices.length;
+  const notional= cap * lev;
+  bar.classList.add('show');
+  $('rrEntry').textContent   = fmt(avgE);
+  $('rrRisk').textContent    = fmt(Math.abs(avgE - sl));
+  $('rrNotional').textContent= fmt(notional);
+}
+
+/* ── Guardar posición ────────────────────────────────────── */
+function savePos() {
+  const s = getSession(); if (!s) return;
+
+  // Leer entradas
+  const entries = fEntries.map(e => {
+    const inp = document.querySelector(`.entry-inp[data-eid="${e.id}"]`);
+    return { id: uid(), price: parseFloat(inp?.value) || 0, hit: false };
+  }).filter(e => e.price > 0);
+
+  if (!entries.length) { toast('Añade al menos una entrada con precio', 'err'); return; }
+
+  const capital = parseFloat($('fCapital').value);
+  const lev     = parseFloat($('fLev').value) || 1;
+  const sl      = parseFloat($('fSl').value)  || 0;
+
+  if (!capital || capital <= 0) { toast('Capital inválido', 'err'); return; }
+
+  const tps = fTPs.map(tp => {
+    const inp = document.querySelector(`.tp-inp[data-tid="${tp.id}"]`);
+    return { id: uid(), price: parseFloat(inp?.value) || 0, hit: false };
+  }).filter(t => t.price > 0);
+
+  const pos = {
+    id: uid(),
+    dir: formDir,
+    capital,
+    leverage: lev,
+    entries,
+    sl,
+    slHit: false,
+    tps,
+    manualClose: null,
+    status: 'open',
+    pnl: 0
+  };
+
+  s.positions.unshift(pos);
+  persist();
+  expanded.add(pos.id);                  // expandir automáticamente
+  $('posForm').style.display   = 'none';
+  $('btnAddPos').style.display = 'flex';
+  renderDetail();
+  toast('Posición guardada', 'ok');
+}
+
+/* ── Eliminar ────────────────────────────────────────────── */
+function delSession(id) {
+  if (!confirm('¿Eliminar este backtesting y todas sus posiciones?')) return;
+  sessions = sessions.filter(s => s.id !== id);
+  persist();
+  renderList();
+  toast('Backtesting eliminado', 'ok');
+}
+
+function delPos(posId) {
+  const s = getSession(); if (!s) return;
+  if (!confirm('¿Eliminar esta posición?')) return;
+  s.positions = s.positions.filter(p => p.id !== posId);
+  expanded.delete(posId);
+  persist();
+  renderDetail();
+  toast('Posición eliminada', 'ok');
+}
+
+/* ── Listeners ───────────────────────────────────────────── */
+$('btnCreate').addEventListener('click', createSession);
+$('newName').addEventListener('keydown', e => { if (e.key === 'Enter') createSession(); });
+
+$('btnBack').addEventListener('click', backToList);
+
+$('btnAddPos').addEventListener('click', () => {
+  $('posForm').style.display   = 'block';
+  $('btnAddPos').style.display = 'none';
+  initForm();
+  setTimeout(() => $('posForm').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+});
+
+$('btnCloseForm').addEventListener('click', () => {
+  $('posForm').style.display   = 'none';
+  $('btnAddPos').style.display = 'flex';
+});
+
+// Dirección
+$('fDirLong').addEventListener('click',  () => { formDir='long';  $('fDirLong').classList.add('active');  $('fDirShort').classList.remove('active'); });
+$('fDirShort').addEventListener('click', () => { formDir='short'; $('fDirShort').classList.add('active'); $('fDirLong').classList.remove('active'); });
+
+// Leverage quick
+$('levBtns').addEventListener('click', e => {
+  const b = e.target.closest('.lev-btn'); if (!b) return;
+  $('fLev').value = b.dataset.lev;
+  document.querySelectorAll('.lev-btn').forEach(x => x.classList.toggle('active', x === b));
+  updateRR();
+});
+$('fLev').addEventListener('input', updateRR);
+$('fCapital').addEventListener('input', updateRR);
+
+// Añadir/borrar entradas
+$('btnAddEntry').addEventListener('click', () => {
+  if (fEntries.length >= 3) return;
+  fEntries.push({ id: 'e' + (++eCtr), price: '' });
+  renderFEntries();
+});
+$('fEntries').addEventListener('click', e => {
+  const b = e.target.closest('[data-del-e]'); if (!b) return;
+  fEntries = fEntries.filter(x => x.id !== b.dataset.delE);
+  renderFEntries(); updateRR();
+});
+$('fEntries').addEventListener('input', e => {
+  const inp = e.target.closest('.entry-inp'); if (!inp) return;
+  const fe = fEntries.find(x => x.id === inp.dataset.eid);
+  if (fe) { fe.price = inp.value; updateRR(); }
+});
+
+// SL change → RR
+$('fSl').addEventListener('input', updateRR);
+
+// Añadir/borrar TPs
+$('btnAddTP').addEventListener('click', () => {
+  fTPs.push({ id: 't' + (++tCtr), price: '' });
+  renderFTPs();
+});
+$('fTPs').addEventListener('click', e => {
+  const b = e.target.closest('[data-del-t]'); if (!b) return;
+  fTPs = fTPs.filter(x => x.id !== b.dataset.delT);
+  renderFTPs();
+});
+$('fTPs').addEventListener('input', e => {
+  const inp = e.target.closest('.tp-inp'); if (!inp) return;
+  const ft = fTPs.find(x => x.id === inp.dataset.tid);
+  if (ft) ft.price = inp.value;
+});
+
+$('btnSavePos').addEventListener('click', savePos);
+
+// Lista de backtestings
+$('btList').addEventListener('click', e => {
+  const del  = e.target.closest('[data-del]');
+  const chip = e.target.closest('.bt-chip');
+  if (del)  { delSession(del.dataset.del); return; }
+  if (chip && !e.target.closest('.bt-chip-del')) openSession(chip.dataset.id);
+});
+
+// Posiciones: eliminación y acciones de simulación
+$('posList').addEventListener('click', e => {
+  const del = e.target.closest('.pos-del-btn');
+  if (del) { delPos(del.dataset.posid); return; }
+  const btn = e.target.closest('[data-action]');
+  if (btn) simAction(btn.dataset.action, btn.dataset.posid, btn.dataset.xid);
+});
+
+/* ── Init ────────────────────────────────────────────────── */
+renderList();
+</script>
+</body>
+</html>
