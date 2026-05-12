@@ -254,6 +254,17 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .toast.ok{background:var(--green);color:#050807;box-shadow:0 4px 22px var(--green-s)}
 .toast.err{background:var(--rose);color:#fff;box-shadow:0 4px 22px var(--rose-s)}
 
+/* ── SEQ BADGE ── */
+.seq-badge{min-width:18px;height:18px;border-radius:9px;padding:0 4px;background:var(--border);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--text-3);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.seq-badge.active{background:var(--green);color:#050807}
+.seq-badge.active.sl{background:var(--rose)}
+
+/* ── TP % INPUT ── */
+.tp-pct-wrap{position:relative;flex-shrink:0}
+.tp-pct-inp{width:58px;background:var(--bg-input);border:1.5px solid var(--border);border-radius:9px;padding:8px 18px 8px 8px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--amber);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none;text-align:right}
+.tp-pct-inp:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-d)}.tp-pct-inp::placeholder{color:var(--text-3)}
+.tp-pct-unit{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--amber);font-weight:700;pointer-events:none}
+
 @media(max-width:500px){
   .container{padding:16px 10px 60px}
   .ep-inp,.tp-inp{width:108px}.lev-quick{grid-template-columns:repeat(3,1fr)}
@@ -537,32 +548,55 @@ function calcSL(avgEntry, lev, capital, dir){
     : avgEntry * (1 + movePct/100);
 }
 
-function calcPosPnL(pos){
-  const hitE = pos.entries.filter(e=>e.hit);
-  if(!hitE.length) return 0;
-  const hitEntries = hitE.map(e=>({price:e.price, amount:e.amount}));
-  const avgE   = calcAvg(hitEntries);
-  const hitAmt = hitE.reduce((s,e)=>s+e.amount,0);
-  const notional = hitAmt * pos.leverage;
-  const nTPs   = pos.tps.length;
-  const tpW    = nTPs>0 ? 1/nTPs : 0;
-  let pnl=0, rem=1.0;
-  for(const tp of pos.tps){
-    if(!tp.hit) continue;
-    const Δ = pos.dir==='long' ? (tp.price-avgE)/avgE : (avgE-tp.price)/avgE;
-    pnl += notional * tpW * Δ;
-    rem -= tpW;
-  }
-  if(rem>0.0001){
-    let closeP = null;
-    if(pos.slHit)                   closeP = pos.sl;
-    else if(pos.manualClose?.price) closeP = pos.manualClose.price;
-    if(closeP!==null){
-      const Δ = pos.dir==='long' ? (closeP-avgE)/avgE : (avgE-closeP)/avgE;
-      pnl += notional * rem * Δ;
+// Replay the event log and return per-step data for display + final state
+function replayLog(pos){
+  if(!pos.log) pos.log=[];
+  let active=[]; // [{price, amount}] — current open slice
+  let pnl=0;
+  const entrySeq={}, tpSeq={}, tpInfo={};
+  let seq=1;
+
+  for(const ev of pos.log){
+    if(ev.type==='entry'){
+      const e=pos.entries.find(x=>x.id===ev.id);
+      if(e){ active.push({price:e.price, amount:e.amount}); entrySeq[ev.id]=seq++; }
+    } else if(ev.type==='tp'){
+      const tp=pos.tps.find(x=>x.id===ev.id);
+      if(!tp) continue;
+      const totalAmt=active.reduce((s,e)=>s+e.amount,0);
+      if(!totalAmt){ tpSeq[ev.id]=seq++; continue; }
+      const avgEntry=calcAvg([...active]);
+      const nTPs=pos.tps.length;
+      const fraction=(tp.pct!=null?tp.pct:(100/nTPs))/100;
+      const exitAmt=totalAmt*fraction;
+      const notional=exitAmt*pos.leverage;
+      const Δ=pos.dir==='long'?(tp.price-avgEntry)/avgEntry:(avgEntry-tp.price)/avgEntry;
+      const pnlStep=notional*Δ;
+      pnl+=pnlStep;
+      tpSeq[ev.id]=seq++;
+      tpInfo[ev.id]={pnl:pnlStep, exitAmt, notional, avgEntry, fraction};
+      active=active.map(e=>({...e, amount:e.amount*(1-fraction)}));
     }
   }
-  return pnl;
+
+  const remainingAmt=active.reduce((s,e)=>s+e.amount,0);
+  const remainingAvg=remainingAmt>0.0001?calcAvg(active.filter(e=>e.amount>0.0001)):0;
+  return {pnl, entrySeq, tpSeq, tpInfo, remainingAmt, remainingAvg};
+}
+
+function calcPosPnL(pos){
+  const {pnl, remainingAmt, remainingAvg}=replayLog(pos);
+  let total=pnl;
+  if(remainingAmt>0.0001){
+    let closeP=null;
+    if(pos.slHit)                   closeP=pos.sl;
+    else if(pos.manualClose?.price) closeP=pos.manualClose.price;
+    if(closeP!==null){
+      const Δ=pos.dir==='long'?(closeP-remainingAvg)/remainingAvg:(remainingAvg-closeP)/remainingAvg;
+      total+=remainingAmt*pos.leverage*Δ;
+    }
+  }
+  return total;
 }
 
 function getSess(){ return sessions.find(s=>s.id===activeId); }
@@ -726,27 +760,24 @@ function buildCard(pos, idx){
 }
 
 function buildSim(pos){
+  if(!pos.log) pos.log=[];
+  const {entrySeq,tpSeq,tpInfo,remainingAmt,remainingAvg}=replayLog(pos);
   const eColors=['var(--green)','#60a5fa','#a78bfa'];
   const eNames =['E1','E2','E3'];
   const hitE   = pos.entries.filter(e=>e.hit);
-  const avgE   = hitE.length?calcAvg(hitE.map(e=>({price:e.price,amount:e.amount}))):null;
-  const hitAmt = hitE.reduce((s,e)=>s+e.amount,0);
-  const notional= avgE ? hitAmt * pos.leverage : 0;
-  const nTPs   = pos.tps.length;
-  const tpW    = nTPs>0?1/nTPs:0;
-  const hitTPs = pos.tps.filter(t=>t.hit).length;
-  const remPart= 1 - hitTPs*tpW;
   const isOpen = pos.status==='open';
+  const nTPs   = pos.tps.length;
 
-  // Entradas
+  // ── ENTRADAS ─────────────────────────────────────────
   const entriesHTML = pos.entries.map((e,i)=>{
-    const rowCls = e.hit?'hit-g':'';
-    return `<div class="sim-row ${rowCls}">
+    const seq=entrySeq[e.id];
+    return `<div class="sim-row ${e.hit?'hit-g':''}">
+      <div class="seq-badge${seq!=null?' active':''}">${seq!=null?seq:''}</div>
       <div class="sim-dot" style="background:${eColors[i]}"></div>
       <div class="sim-body">
         <div class="sim-tag" style="color:${eColors[i]}">${eNames[i]}</div>
         <div class="sim-price">${fmt(e.price)} USDT</div>
-        <div class="sim-amt">${fmt(e.amount)} USDT asignados (${[15,30,55][i]}%)</div>
+        <div class="sim-amt">${fmt(e.amount)} USDT (${[15,30,55][i]}% posición)</div>
       </div>
       ${isOpen
         ?`<button class="hit-btn ${e.hit?'g':''}" data-action="entry" data-posid="${esc(pos.id)}" data-xid="${esc(e.id)}">
@@ -757,32 +788,35 @@ function buildSim(pos){
     </div>`;
   }).join('');
 
-  // Barra de cálculo (solo cuando hay entradas tocadas)
+  // ── RESUMEN DE CARGA ─────────────────────────────────
   let cbarHTML='';
-  if(avgE){
+  if(hitE.length){
+    const totalHit=hitE.reduce((s,e)=>s+e.amount,0);
+    const avgHit=calcAvg(hitE.map(e=>({price:e.price,amount:e.amount})));
     cbarHTML=`<div class="cbar">
-      <div class="cbar-cell"><div class="cbar-lbl">Avg Entrada</div><div class="cbar-val">${fmt(avgE)}</div></div>
-      <div class="cbar-cell"><div class="cbar-lbl">Notional hit</div><div class="cbar-val a">${fmt(notional)} USDT</div></div>
+      <div class="cbar-cell"><div class="cbar-lbl">Capital cargado</div><div class="cbar-val a">${fmt(totalHit)} USDT</div></div>
+      <div class="cbar-cell"><div class="cbar-lbl">Avg entrada</div><div class="cbar-val">${fmt(avgHit)}</div></div>
       <div class="cbar-cell"><div class="cbar-lbl">Entradas</div><div class="cbar-val g">${hitE.length}/${pos.entries.length}</div></div>
     </div>`;
   }
 
-  // SL
+  // ── STOP LOSS ────────────────────────────────────────
   let slHTML='';
   if(pos.sl){
     let slSide='';
-    if(avgE){
-      const Δ=pos.dir==='long'?(pos.sl-avgE)/avgE:(avgE-pos.sl)/avgE;
-      const slPnL=notional*remPart*Δ;
+    if(remainingAmt>0.001&&remainingAvg>0){
+      const Δ=pos.dir==='long'?(pos.sl-remainingAvg)/remainingAvg:(remainingAvg-pos.sl)/remainingAvg;
+      const slPnL=remainingAmt*pos.leverage*Δ;
       slSide=`<div class="sim-side neg">${fmt(slPnL)} USDT</div>`;
     }
     slHTML=`<div class="sim-label">Stop Loss (Auto · 2%)</div>
     <div class="sim-row ${pos.slHit?'hit-r':''}">
+      <div class="seq-badge" style="opacity:0"></div>
       <div class="sim-dot" style="background:var(--rose)"></div>
       <div class="sim-body">
         <div class="sim-tag" style="color:var(--rose)">Stop Loss</div>
         <div class="sim-price">${fmt(pos.sl)} USDT</div>
-        <div class="sim-amt">Pérdida máx. 2% del capital (si posición llena)</div>
+        <div class="sim-amt">Cierra posición restante · 2% máx. pérdida</div>
       </div>
       ${slSide}
       ${isOpen
@@ -794,23 +828,36 @@ function buildSim(pos){
     </div>`;
   }
 
-  // TPs
+  // ── TAKE PROFITS ─────────────────────────────────────
   let tpsHTML='';
   if(nTPs){
     const rows=pos.tps.map((tp,i)=>{
-      let side='';
-      if(avgE){
-        const Δ=pos.dir==='long'?(tp.price-avgE)/avgE:(avgE-tp.price)/avgE;
-        const partPnL=notional*tpW*Δ;
-        side=`<div class="sim-side ${partPnL>=0?'pos':'neg'}">${partPnL>=0?'+':''}${fmt(partPnL)} USDT</div>`;
+      const seq=tpSeq[tp.id];
+      const info=tpInfo[tp.id];
+      const tpPct=tp.pct!=null?tp.pct:Math.round(100/nTPs);
+      let sideHTML='';
+      if(info){
+        // PnL real de la replay
+        sideHTML=`<div class="sim-side ${info.pnl>=0?'pos':'neg'}">${info.pnl>=0?'+':''}${fmt(info.pnl)} USDT</div>`;
+      } else if(remainingAmt>0.001&&remainingAvg>0){
+        // Estimación si se tocase ahora
+        const estExit=remainingAmt*(tpPct/100);
+        const Δ=pos.dir==='long'?(tp.price-remainingAvg)/remainingAvg:(remainingAvg-tp.price)/remainingAvg;
+        const est=estExit*pos.leverage*Δ;
+        sideHTML=`<div class="sim-side ${est>=0?'pos':'neg'}" style="opacity:.5">~${est>=0?'+':''}${fmt(est)}</div>`;
       }
+      const subLine=info
+        ?`Cerró ${fmt(info.exitAmt)} USDT (avg ${fmt(info.avgEntry)})`
+        :`Cierra ${tpPct}% de la posición activa`;
       return `<div class="sim-row ${tp.hit?'hit-g':''}">
+        <div class="seq-badge${seq!=null?' active':''}">${seq!=null?seq:''}</div>
         <div class="sim-dot" style="background:var(--green)"></div>
         <div class="sim-body">
-          <div class="sim-tag" style="color:var(--green)">TP${i+1}</div>
+          <div class="sim-tag" style="color:var(--green)">TP${i+1}&nbsp;<span style="color:var(--amber);font-size:9px;font-weight:700">${tpPct}%</span></div>
           <div class="sim-price">${fmt(tp.price)} USDT</div>
+          <div class="sim-amt">${subLine}</div>
         </div>
-        ${side}
+        ${sideHTML}
         ${isOpen
           ?`<button class="hit-btn ${tp.hit?'g':''}" data-action="tp" data-posid="${esc(pos.id)}" data-xid="${esc(tp.id)}">
               <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -822,12 +869,22 @@ function buildSim(pos){
     tpsHTML=`<div class="sim-label">Take Profits</div>${rows}`;
   }
 
-  // Panel de cierre manual
+  // ── POSICIÓN RESTANTE (tras TPs) ─────────────────────
+  let remainHTML='';
+  if(hitE.length&&pos.tps.some(t=>t.hit)&&remainingAmt>0.001){
+    remainHTML=`<div class="cbar" style="border-color:#16c78428;background:var(--bg-card)">
+      <div class="cbar-cell"><div class="cbar-lbl">Posición restante</div><div class="cbar-val a">${fmt(remainingAmt)} USDT</div></div>
+      <div class="cbar-cell"><div class="cbar-lbl">Avg restante</div><div class="cbar-val">${fmt(remainingAvg)}</div></div>
+      <div class="cbar-cell"><div class="cbar-lbl">Notional rest.</div><div class="cbar-val">${fmt(remainingAmt*pos.leverage)} USDT</div></div>
+    </div>`;
+  }
+
+  // ── CIERRE MANUAL ────────────────────────────────────
   let closeHTML='';
   if(isOpen){
     const canClose=hitE.length>0;
     closeHTML=`<div class="close-panel">
-      <div class="close-panel-hd">Cerrar posición en precio</div>
+      <div class="close-panel-hd">Cerrar posición restante en precio</div>
       <div class="close-panel-body">
         <div class="close-row">
           <input class="close-inp" id="ci-${pos.id}" type="number" min="0" placeholder="Precio de cierre" ${!canClose?'disabled':''}/>
@@ -838,7 +895,7 @@ function buildSim(pos){
     </div>`;
   }
 
-  // PnL final
+  // ── PNL FINAL ────────────────────────────────────────
   let pnlHTML='';
   if(!isOpen){
     const pnl=pos.pnl??0;
@@ -852,7 +909,7 @@ function buildSim(pos){
   }
 
   return `<div class="sim-label" style="margin-top:0">Entradas</div>
-    ${entriesHTML}${cbarHTML}${slHTML}${tpsHTML}${closeHTML}${pnlHTML}`;
+    ${entriesHTML}${cbarHTML}${slHTML}${tpsHTML}${remainHTML}${closeHTML}${pnlHTML}`;
 }
 
 function renderDetail(){ renderHeader(); renderPositions(); }
@@ -861,20 +918,39 @@ function renderDetail(){ renderHeader(); renderPositions(); }
 function simAction(action, posId, xId){
   const s=getSess(); if(!s) return;
   const pos=s.positions.find(p=>p.id===posId); if(!pos) return;
+  if(!pos.log) pos.log=[];
 
   if(action==='entry'){
     const e=pos.entries.find(en=>en.id===xId); if(!e) return;
-    e.hit=!e.hit;
-    // reset cierre si se desmarca entrada
-    if(!pos.entries.some(en=>en.hit)){ pos.slHit=false; pos.manualClose=null; pos.tps.forEach(t=>t.hit=false); pos.status='open'; pos.pnl=0; }
-    else{ pos.pnl=calcPosPnL(pos); }
+    if(e.hit){
+      // Desmarcar: quitar del log
+      pos.log=pos.log.filter(ev=>!(ev.type==='entry'&&ev.id===xId));
+      e.hit=false;
+    } else {
+      pos.log.push({type:'entry', id:xId});
+      e.hit=true;
+    }
+    // Sync hit state desde el log
+    pos.entries.forEach(en=>{ en.hit=pos.log.some(ev=>ev.type==='entry'&&ev.id===en.id); });
+    pos.tps.forEach(tp=>{ tp.hit=pos.log.some(ev=>ev.type==='tp'&&ev.id===tp.id); });
+    if(!pos.entries.some(en=>en.hit)){
+      pos.log=[]; pos.slHit=false; pos.manualClose=null; pos.status='open'; pos.pnl=0;
+    } else {
+      pos.pnl=calcPosPnL(pos);
+    }
 
   }else if(action==='tp'){
     if(!pos.entries.some(e=>e.hit)){ showToast('Marca al menos una entrada primero','err'); return; }
     const tp=pos.tps.find(t=>t.id===xId); if(!tp) return;
-    tp.hit=!tp.hit;
+    if(tp.hit){
+      pos.log=pos.log.filter(ev=>!(ev.type==='tp'&&ev.id===xId));
+      tp.hit=false;
+    } else {
+      pos.log.push({type:'tp', id:xId});
+      tp.hit=true;
+    }
     pos.pnl=calcPosPnL(pos);
-    if(pos.tps.length&&pos.tps.every(t=>t.hit)){ pos.status='closed'; }
+    pos.status=pos.tps.length&&pos.tps.every(t=>t.hit)?'closed':'open';
 
   }else if(action==='sl'){
     if(!pos.entries.some(e=>e.hit)){ showToast('Marca al menos una entrada primero','err'); return; }
@@ -894,7 +970,6 @@ function simAction(action, posId, xId){
   }
 
   schedSave(s); renderDetail();
-  // Mantener expandida
   setTimeout(()=>{ const d=$(`pd-${posId}`); if(d){ d.classList.add('open'); $(`pc-${posId}`)?.classList.add('expanded'); expanded.add(posId); } },50);
 }
 
@@ -931,16 +1006,23 @@ function renderFEntries(){
 }
 
 function renderFTPs(){
-  $('fTPs').innerHTML=fTPs.map((tp,i)=>`
-    <div class="tp-row">
+  const n=fTPs.length;
+  $('fTPs').innerHTML=fTPs.map((tp,i)=>{
+    const defPct=n>0?Math.round(100/n):100;
+    return `<div class="tp-row">
       <div class="tp-dot"></div>
       <div class="tp-tag">TP${i+1}</div>
       <div class="tp-inp-wrap">
         <input class="tp-inp" data-tid="${tp.id}" type="number" min="0" placeholder="0.00" value="${tp.price||''}" />
         <span class="tp-unit">USDT</span>
       </div>
+      <div class="tp-pct-wrap">
+        <input class="tp-pct-inp" data-pid="${tp.id}" type="number" min="1" max="100" placeholder="${defPct}" value="${tp.pct||''}" />
+        <span class="tp-pct-unit">%</span>
+      </div>
       <button class="tp-del" data-del-t="${tp.id}"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function updateCalcPanel(){
@@ -994,16 +1076,21 @@ function savePos(){
   const sl =calcSL(avg, lev, cur, fDir);
 
   // TPs
+  const nFTPs=fTPs.filter(tp=>{const i=document.querySelector(`.tp-inp[data-tid="${tp.id}"]`);return parseFloat(i?.value)>0;}).length;
   const tps=fTPs.map(tp=>{
     const inp=document.querySelector(`.tp-inp[data-tid="${tp.id}"]`);
-    return {id:uid(), price:parseFloat(inp?.value)||0, hit:false};
-  }).filter(t=>t.price>0);
+    const pctInp=document.querySelector(`.tp-pct-inp[data-pid="${tp.id}"]`);
+    const price=parseFloat(inp?.value)||0;
+    if(!price) return null;
+    const pct=parseFloat(pctInp?.value)||Math.round(100/nFTPs);
+    return {id:uid(), price, pct, hit:false};
+  }).filter(Boolean);
 
   const newPos={
     id:uid(), dir:fDir, leverage:lev,
     capitalAtCreation:cur, posSize,
     entries, sl, slHit:false, tps,
-    manualClose:null, status:'open', pnl:0
+    manualClose:null, status:'open', pnl:0, log:[]
   };
 
   s.positions.unshift(newPos);
@@ -1129,9 +1216,10 @@ $('fTPs').addEventListener('click', e=>{
   fTPs=fTPs.filter(x=>x.id!==b.dataset.delT); renderFTPs();
 });
 $('fTPs').addEventListener('input', e=>{
-  const inp=e.target.closest('.tp-inp'); if(!inp) return;
-  const ft=fTPs.find(x=>x.id===inp.dataset.tid);
-  if(ft) ft.price=inp.value;
+  const inp=e.target.closest('.tp-inp');
+  if(inp){ const ft=fTPs.find(x=>x.id===inp.dataset.tid); if(ft) ft.price=inp.value; return; }
+  const pct=e.target.closest('.tp-pct-inp');
+  if(pct){ const ft=fTPs.find(x=>x.id===pct.dataset.pid); if(ft) ft.pct=parseFloat(pct.value)||null; }
 });
 
 $('btnSavePos').addEventListener('click', savePos);
