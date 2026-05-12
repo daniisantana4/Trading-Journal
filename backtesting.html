@@ -707,18 +707,12 @@ function renderPositions(){
     return;
   }
   el.innerHTML = s.positions.map((p,i)=>buildCard(p,i)).join('');
+  // Restaurar estado expandido tras re-render
   s.positions.forEach(pos=>{
-    const head=$(`#pc-${pos.id} .pos-head`);
-    const detail=$(`pd-${pos.id}`);
-    if(head&&detail){
-      head.addEventListener('click', e=>{
-        if(e.target.closest('[data-action]')||e.target.closest('.btn-del')) return;
-        const card=$(`pc-${pos.id}`);
-        if(expanded.has(pos.id)){ expanded.delete(pos.id); detail.classList.remove('open'); card.classList.remove('expanded'); }
-        else{ expanded.add(pos.id); detail.classList.add('open'); card.classList.add('expanded'); }
-      });
+    if(expanded.has(pos.id)){
+      document.getElementById(`pd-${pos.id}`)?.classList.add('open');
+      document.getElementById(`pc-${pos.id}`)?.classList.add('expanded');
     }
-    if(expanded.has(pos.id)){ detail?.classList.add('open'); $(`pc-${pos.id}`)?.classList.add('expanded'); }
   });
 }
 
@@ -1232,15 +1226,32 @@ $('sessList').addEventListener('click', e=>{
   if(chip&&!e.target.closest('.btn-del')) openSession(chip.dataset.id);
 });
 
-// Posiciones: borrar y simular
+// Posiciones: borrar, simular y expandir
 $('posList').addEventListener('click', e=>{
-  const del=e.target.closest('[data-posid].btn-del');
-  if(del){ delPos(del.dataset.posid); return; }
-  // btn-del dentro del pos-head
-  const delBtn=e.target.closest('.pos-head .btn-del');
+  // Borrar posición (btn-del tiene data-posid)
+  const delBtn=e.target.closest('.btn-del[data-posid]');
   if(delBtn){ delPos(delBtn.dataset.posid); return; }
+
+  // Botones de simulación (entry, tp, sl, close)
   const act=e.target.closest('[data-action]');
-  if(act) simAction(act.dataset.action, act.dataset.posid, act.dataset.xid);
+  if(act){ simAction(act.dataset.action, act.dataset.posid, act.dataset.xid); return; }
+
+  // Expand/collapse al pulsar la cabecera
+  const head=e.target.closest('.pos-head');
+  if(head){
+    const card=head.closest('.pos-card'); if(!card) return;
+    const posId=card.id.slice(3); // quita 'pc-'
+    const detail=document.getElementById(`pd-${posId}`); if(!detail) return;
+    if(expanded.has(posId)){
+      expanded.delete(posId);
+      detail.classList.remove('open');
+      card.classList.remove('expanded');
+    } else {
+      expanded.add(posId);
+      detail.classList.add('open');
+      card.classList.add('expanded');
+    }
+  }
 });
 
 /* ── Init ───────────────────────────────────────── */
