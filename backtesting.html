@@ -254,6 +254,13 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 .toast.ok{background:var(--green);color:#050807;box-shadow:0 4px 22px var(--green-s)}
 .toast.err{background:var(--rose);color:#fff;box-shadow:0 4px 22px var(--rose-s)}
 
+/* ── SL SLIDER ── */
+#slSlider{width:100%;accent-color:var(--rose);cursor:pointer;margin:4px 0;display:block}
+.sl-inp{width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--border);outline:none;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-1);padding:2px 0 3px;min-width:0;transition:border-color .2s}
+.sl-inp:focus{border-bottom-color:var(--rose)}
+.sl-inp.rose{color:var(--rose)}
+.sl-inp::placeholder{color:var(--text-3)}
+
 /* ── SEQ BADGE ── */
 .seq-badge{min-width:18px;height:18px;border-radius:9px;padding:0 4px;background:var(--border);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--text-3);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
 .seq-badge.active{background:var(--green);color:#050807}
@@ -413,11 +420,40 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
               <div class="calc-val amber" id="cpNotional">—</div>
             </div>
           </div>
-          <div class="sl-preview-row" id="slPreviewRow" style="display:none">
-            <div class="sl-preview-dot"></div>
-            <div class="sl-preview-lbl" id="slPreviewLbl">Stop Loss automático</div>
-            <div class="sl-preview-price" id="slPreviewPrice">—</div>
-            <div class="sl-preview-unit">USDT</div>
+          <!-- SL ajustable -->
+          <div id="slSection" style="display:none">
+            <!-- Cabecera: precio actual + botón reset -->
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--border);background:var(--rose-d)">
+              <div style="width:7px;height:7px;border-radius:50%;background:var(--rose);flex-shrink:0"></div>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:1px;flex:1">Stop Loss</span>
+              <span id="slPriceLabel" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--rose)">—</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--rose);opacity:.7">USDT</span>
+              <button id="slResetBtn" style="padding:3px 10px;border:1px solid #ea394340;border-radius:6px;background:transparent;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;color:var(--rose);cursor:pointer;letter-spacing:.5px;white-space:nowrap;transition:background .2s">Auto 2%</button>
+            </div>
+            <!-- Slider -->
+            <div style="padding:10px 12px 6px;border-top:1px solid var(--border)">
+              <input type="range" id="slSlider" min="0.25" max="15" step="0.05" value="2"/>
+              <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text-3);margin-top:1px">
+                <span>−0.25%</span>
+                <span id="slSliderLabel" style="color:var(--rose);font-weight:700">2.00% · — USDT</span>
+                <span>−15%</span>
+              </div>
+            </div>
+            <!-- Tres inputs -->
+            <div class="calc-panel-row" style="border-top:1px solid var(--border)">
+              <div class="calc-cell">
+                <div class="calc-lbl">Precio SL</div>
+                <input id="slPriceInp" type="text" inputmode="decimal" placeholder="—" class="sl-inp rose"/>
+              </div>
+              <div class="calc-cell">
+                <div class="calc-lbl">Pérdida (USDT)</div>
+                <input id="slLossInp" type="text" inputmode="decimal" placeholder="—" class="sl-inp"/>
+              </div>
+              <div class="calc-cell" style="border-right:none">
+                <div class="calc-lbl">% cuenta</div>
+                <input id="slPctInp" type="text" inputmode="decimal" placeholder="—" class="sl-inp"/>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -535,6 +571,8 @@ let fEntries    = [];   // [{id,price}]
 let fTPs        = [];   // [{id,price,pct}]
 let eCtr=0, tCtr=0;
 let editingPosId = null; // null = crear, string = editar
+let customSL     = null; // null = auto (2%), number = precio personalizado
+let slSyncing    = false;
 
 /* ── Cálculos clave ─────────────────────────────── */
 const E_WEIGHTS = [0.15, 0.30, 0.55]; // pesos de cada entrada
@@ -1001,7 +1039,7 @@ const eColors=['var(--green)','#60a5fa','#a78bfa'];
 const eNames =['E1','E2','E3'];
 
 function initForm(){
-  editingPosId=null;
+  editingPosId=null; customSL=null;
   $('savePosLbl').textContent='Guardar Posición';
   fDir='long'; fEntries=[{id:'e'+(++eCtr),price:''}]; fTPs=[{id:'t'+(++tCtr),price:''}];
   $('fDirL').classList.add('active'); $('fDirS').classList.remove('active');
@@ -1013,7 +1051,7 @@ function initForm(){
 function editPos(posId){
   const s=getSess(); if(!s) return;
   const pos=s.positions.find(p=>p.id===posId); if(!pos) return;
-  editingPosId=posId;
+  editingPosId=posId; customSL=null;
 
   // Dirección
   fDir=pos.dir;
@@ -1076,6 +1114,67 @@ function renderFTPs(){
   }).join('');
 }
 
+// Formato numérico sin locale para inputs editables
+function fmtRaw(n){
+  if(n==null||isNaN(n)) return '';
+  const a=Math.abs(n);
+  const d=a>=10000?2:a>=1000?2:a>=100?3:a>=10?4:a>=1?5:a>=0.1?6:8;
+  return n.toFixed(d);
+}
+
+function getSLCtx(){
+  const s=getSess(); if(!s) return null;
+  const cur=calcCurrent(s);
+  const {pos:posSize, e:amts}=calcAmounts(cur);
+  const lev=parseFloat($('fLev')?.value)||0;
+  if(!lev) return null;
+  const prices=fEntries.map((en,i)=>({price:parseNum(en.price)||0, amount:amts[i]})).filter(e=>e.price>0);
+  const avg=calcAvg(prices);
+  if(!avg) return null;
+  return {cur, posSize, lev, avg, notional:posSize*lev};
+}
+
+function syncSL(source, value){
+  if(slSyncing) return;
+  slSyncing=true;
+  const ctx=getSLCtx();
+  if(!ctx){ slSyncing=false; return; }
+  const {cur, notional, avg, lev}=ctx;
+
+  let slPrice;
+  if(source==='auto'){
+    slPrice=calcSL(avg, lev, cur, fDir);
+    customSL=null;
+  } else if(source==='slider'||source==='pct'){
+    const lossPct=parseFloat(value); if(!lossPct||lossPct<=0){ slSyncing=false; return; }
+    const movePct=cur*lossPct/100/notional*100;
+    slPrice=fDir==='long'?avg*(1-movePct/100):avg*(1+movePct/100);
+    customSL=slPrice;
+  } else if(source==='price'){
+    slPrice=parseNum(value); if(!slPrice||isNaN(slPrice)){ slSyncing=false; return; }
+    customSL=slPrice;
+  } else if(source==='loss'){
+    const lossAmt=parseNum(value); if(!lossAmt||lossAmt<=0){ slSyncing=false; return; }
+    const movePct=lossAmt/notional*100;
+    slPrice=fDir==='long'?avg*(1-movePct/100):avg*(1+movePct/100);
+    customSL=slPrice;
+  } else { slSyncing=false; return; }
+
+  const movePct=fDir==='long'?(avg-slPrice)/avg*100:(slPrice-avg)/avg*100;
+  const lossAmt=Math.max(0, notional*movePct/100);
+  const lossPct=lossAmt/cur*100;
+  const sliderVal=Math.min(15, Math.max(0.25, lossPct));
+
+  $('slPriceLabel').textContent=fmt(slPrice);
+  $('slSliderLabel').textContent=lossPct.toFixed(2)+'% · '+fmt(lossAmt)+' USDT';
+  $('slSlider').value=sliderVal.toFixed(2);
+  if(source!=='price') $('slPriceInp').value=fmtRaw(slPrice);
+  if(source!=='loss')  $('slLossInp').value=lossAmt.toFixed(2);
+  if(source!=='pct'&&source!=='slider') $('slPctInp').value=lossPct.toFixed(2);
+
+  slSyncing=false;
+}
+
 function updateCalcPanel(){
   const s=getSess(); if(!s) return;
   const cur=calcCurrent(s);
@@ -1095,15 +1194,15 @@ function updateCalcPanel(){
     $('cpAvg').textContent=fmt(avg);
     $('cpNotional').textContent=lev?fmt(notional)+' USDT':'— (sin leverage)';
     if(avg&&lev){
-      const sl=calcSL(avg, lev, cur, fDir);
-      $('slPreviewRow').style.display='flex';
-      $('slPreviewLbl').textContent=`SL ${fDir.toUpperCase()} · max loss ${fmt(cur*0.02)} USDT`;
-      $('slPreviewPrice').textContent=fmt(sl);
-    } else { $('slPreviewRow').style.display='none'; }
+      $('slSection').style.display='block';
+      // En modo auto siempre recalcula; en modo custom mantiene precio pero refresca %
+      if(customSL===null) syncSL('auto', null);
+      else syncSL('price', customSL);
+    } else { $('slSection').style.display='none'; }
   } else {
     $('cpAvg').textContent='—';
     $('cpNotional').textContent='—';
-    $('slPreviewRow').style.display='none';
+    $('slSection').style.display='none';
   }
 }
 
@@ -1122,7 +1221,7 @@ function savePos(){
   if(!entries.length){ showToast('Añade al menos una entrada con precio','err'); return; }
 
   const avg=calcAvg(entries);
-  const sl =calcSL(avg, lev, cur, fDir);
+  const sl =customSL!==null ? customSL : calcSL(avg, lev, cur, fDir);
 
   // TPs
   const nFTPs=fTPs.filter(tp=>{const i=document.querySelector(`.tp-inp[data-tid="${tp.id}"]`);return parseNum(i?.value)>0;}).length;
@@ -1290,6 +1389,13 @@ $('fTPs').addEventListener('input', e=>{
 });
 
 $('btnSavePos').addEventListener('click', savePos);
+
+// SL ajustable
+$('slSlider').addEventListener('input', e=>syncSL('slider', e.target.value));
+$('slPriceInp').addEventListener('input', e=>syncSL('price', e.target.value));
+$('slLossInp').addEventListener('input',  e=>syncSL('loss',  e.target.value));
+$('slPctInp').addEventListener('input',   e=>syncSL('pct',   e.target.value));
+$('slResetBtn').addEventListener('click', ()=>{ customSL=null; syncSL('auto', null); });
 
 // Lista de sesiones
 $('sessList').addEventListener('click', e=>{
