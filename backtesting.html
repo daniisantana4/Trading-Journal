@@ -435,7 +435,7 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 
         <button class="btn-primary" id="btnSavePos" style="margin-top:18px">
           <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Guardar Posición
+          <span id="savePosLbl">Guardar Posición</span>
         </button>
       </div>
     </div>
@@ -530,10 +530,11 @@ let activeId = null;
 const expanded = new Set();
 
 // Formulario
-let fDir     = 'long';
-let fEntries = [];   // [{id,price}]
-let fTPs     = [];   // [{id,price}]
+let fDir        = 'long';
+let fEntries    = [];   // [{id,price}]
+let fTPs        = [];   // [{id,price,pct}]
 let eCtr=0, tCtr=0;
+let editingPosId = null; // null = crear, string = editar
 
 /* ── Cálculos clave ─────────────────────────────── */
 const E_WEIGHTS = [0.15, 0.30, 0.55]; // pesos de cada entrada
@@ -757,6 +758,9 @@ function buildCard(pos, idx){
       </div>
       <div class="pos-sdot ${dotCls}"></div>
       <div class="pos-pnl ${pnlCls}">${pos.status==='closed'?(pnl>=0?'+':'')+fmt(pnl)+' USDT':'Abierta'}</div>
+      <button class="btn-del" data-editpos="${esc(pos.id)}" title="Editar" style="color:var(--amber)">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
       <button class="btn-del" data-posid="${esc(pos.id)}" title="Eliminar">
         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
       </button>
@@ -997,11 +1001,39 @@ const eColors=['var(--green)','#60a5fa','#a78bfa'];
 const eNames =['E1','E2','E3'];
 
 function initForm(){
+  editingPosId=null;
+  $('savePosLbl').textContent='Guardar Posición';
   fDir='long'; fEntries=[{id:'e'+(++eCtr),price:''}]; fTPs=[{id:'t'+(++tCtr),price:''}];
   $('fDirL').classList.add('active'); $('fDirS').classList.remove('active');
   $('fLev').value='';
   document.querySelectorAll('.lev-btn').forEach(b=>b.classList.remove('active'));
   renderFEntries(); renderFTPs(); updateCalcPanel();
+}
+
+function editPos(posId){
+  const s=getSess(); if(!s) return;
+  const pos=s.positions.find(p=>p.id===posId); if(!pos) return;
+  editingPosId=posId;
+
+  // Dirección
+  fDir=pos.dir;
+  $('fDirL').classList.toggle('active', pos.dir==='long');
+  $('fDirS').classList.toggle('active', pos.dir==='short');
+
+  // Apalancamiento
+  $('fLev').value=pos.leverage;
+  document.querySelectorAll('.lev-btn').forEach(b=>b.classList.toggle('active', b.dataset.lev==pos.leverage));
+
+  // Entradas y TPs (preservar precios)
+  eCtr=0; tCtr=0;
+  fEntries=pos.entries.map(e=>({id:'e'+(++eCtr), price:String(e.price)}));
+  fTPs=pos.tps.map(t=>({id:'t'+(++tCtr), price:String(t.price), pct:t.pct}));
+
+  $('savePosLbl').textContent='Actualizar Posición';
+  $('posForm').style.display='block';
+  $('btnAddPos').style.display='none';
+  renderFEntries(); renderFTPs(); updateCalcPanel();
+  setTimeout(()=>$('posForm').scrollIntoView({behavior:'smooth',block:'start'}),50);
 }
 
 function renderFEntries(){
@@ -1075,22 +1107,20 @@ function updateCalcPanel(){
   }
 }
 
-/* ── Guardar posición ───────────────────────────── */
+/* ── Guardar / actualizar posición ──────────────── */
 function savePos(){
   const s=getSess(); if(!s) return;
   const cur=calcCurrent(s);
   const {pos:posSize, e:amts}=calcAmounts(cur);
   const lev=parseFloat($('fLev').value)||1;
 
-  // Recoger entradas con precios
+  // Entradas
   const entries=fEntries.map((en,i)=>{
     const inp=document.querySelector(`.ep-inp[data-eid="${en.id}"]`);
     return {id:uid(), price:parseNum(inp?.value)||0, amount:amts[i], hit:false};
   }).filter(e=>e.price>0);
-
   if(!entries.length){ showToast('Añade al menos una entrada con precio','err'); return; }
 
-  // Avg y SL
   const avg=calcAvg(entries);
   const sl =calcSL(avg, lev, cur, fDir);
 
@@ -1105,20 +1135,36 @@ function savePos(){
     return {id:uid(), price, pct, hit:false};
   }).filter(Boolean);
 
-  const newPos={
-    id:uid(), dir:fDir, leverage:lev,
-    capitalAtCreation:cur, posSize,
-    entries, sl, slHit:false, tps,
-    manualClose:null, status:'open', pnl:0, log:[]
-  };
+  if(editingPosId){
+    // ── Modo edición ──────────────────────────────
+    const pos=s.positions.find(p=>p.id===editingPosId);
+    if(!pos){ showToast('Posición no encontrada','err'); return; }
+    pos.dir=fDir; pos.leverage=lev;
+    pos.capitalAtCreation=cur; pos.posSize=posSize;
+    pos.entries=entries; pos.sl=sl; pos.tps=tps;
+    // Resetear simulación
+    pos.log=[]; pos.slHit=false; pos.manualClose=null; pos.status='open'; pos.pnl=0;
+    editingPosId=null;
+    expanded.add(pos.id);
+    showToast('Posición actualizada','ok');
+  } else {
+    // ── Modo crear ────────────────────────────────
+    const newPos={
+      id:uid(), dir:fDir, leverage:lev,
+      capitalAtCreation:cur, posSize,
+      entries, sl, slHit:false, tps,
+      manualClose:null, status:'open', pnl:0, log:[]
+    };
+    s.positions.unshift(newPos);
+    expanded.add(newPos.id);
+    showToast('Posición guardada','ok');
+  }
 
-  s.positions.unshift(newPos);
-  expanded.add(newPos.id);
+  $('savePosLbl').textContent='Guardar Posición';
   schedSave(s);
   $('posForm').style.display='none';
   $('btnAddPos').style.display='flex';
   renderDetail();
-  showToast('Posición guardada','ok');
 }
 
 /* ── Crear sesión ───────────────────────────────── */
@@ -1198,6 +1244,8 @@ $('btnAddPos').addEventListener('click', ()=>{
 $('btnFormClose').addEventListener('click', ()=>{
   $('posForm').style.display='none';
   $('btnAddPos').style.display='flex';
+  editingPosId=null;
+  $('savePosLbl').textContent='Guardar Posición';
 });
 
 $('fDirL').addEventListener('click', ()=>{ fDir='long'; $('fDirL').classList.add('active'); $('fDirS').classList.remove('active'); updateCalcPanel(); });
@@ -1251,8 +1299,12 @@ $('sessList').addEventListener('click', e=>{
   if(chip&&!e.target.closest('.btn-del')) openSession(chip.dataset.id);
 });
 
-// Posiciones: borrar, simular y expandir
+// Posiciones: editar, borrar, simular y expandir
 $('posList').addEventListener('click', e=>{
+  // Editar posición
+  const editBtn=e.target.closest('[data-editpos]');
+  if(editBtn){ editPos(editBtn.dataset.editpos); return; }
+
   // Borrar posición (btn-del tiene data-posid)
   const delBtn=e.target.closest('.btn-del[data-posid]');
   if(delBtn){ delPos(delBtn.dataset.posid); return; }
