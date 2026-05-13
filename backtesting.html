@@ -452,6 +452,16 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
 const $ = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+// Parsea precios aceptando tanto punto como coma decimal, y puntos de miles
+// "80.405,7" → 80405.7 | "80405.7" → 80405.7 | "80405,7" → 80405.7
+function parseNum(s){
+  const str=String(s??'').trim().replace(/[^\d.,-]/g,'');
+  if(!str||str==='-') return NaN;
+  // Normaliza: coma→punto, luego elimina todos los puntos excepto el último
+  const norm=str.replace(/,/g,'.').replace(/\.(?=.*\.)/g,'');
+  return parseFloat(norm);
+}
 function fmt(n){
   if(n==null||isNaN(n)) return '—';
   const a=Math.abs(n);
@@ -886,7 +896,7 @@ function buildSim(pos){
       <div class="close-panel-hd">Cerrar posición restante en precio</div>
       <div class="close-panel-body">
         <div class="close-row">
-          <input class="close-inp" id="ci-${pos.id}" type="number" min="0" placeholder="Precio de cierre" ${!canClose?'disabled':''}/>
+          <input class="close-inp" id="ci-${pos.id}" type="text" inputmode="decimal" placeholder="Precio de cierre" ${!canClose?'disabled':''}/>
           <button class="close-btn" data-action="close" data-posid="${esc(pos.id)}" ${!canClose?'disabled':''}>Cerrar</button>
         </div>
         ${!canClose?`<div class="close-hint">Marca al menos una entrada como tocada primero</div>`:''}
@@ -966,7 +976,7 @@ function simAction(action, posId, xId){
   }else if(action==='close'){
     if(!pos.entries.some(e=>e.hit)){ showToast('Marca al menos una entrada primero','err'); return; }
     const inp=$(`ci-${posId}`);
-    const price=parseFloat(inp?.value);
+    const price=parseNum(inp?.value);
     if(!price||price<=0){ showToast('Precio de cierre inválido','err'); return; }
     pos.slHit=false; pos.manualClose={price};
     pos.pnl=calcPosPnL(pos); pos.status='closed';
@@ -1006,7 +1016,7 @@ function renderFEntries(){
         <span class="ep-amt">${fmt(amts[i])} USDT (${[15,30,55][i]}% de posición)</span>
       </div>
       <div class="ep-inp-wrap">
-        <input class="ep-inp" data-eid="${en.id}" type="number" min="0" placeholder="0.00" value="${en.price||''}" />
+        <input class="ep-inp" data-eid="${en.id}" type="text" inputmode="decimal" placeholder="0.00" value="${en.price||''}" />
         <span class="ep-unit">USDT</span>
       </div>
       ${i>0?`<button class="ep-del" data-del-e="${en.id}"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`:''}
@@ -1022,7 +1032,7 @@ function renderFTPs(){
       <div class="tp-dot"></div>
       <div class="tp-tag">TP${i+1}</div>
       <div class="tp-inp-wrap">
-        <input class="tp-inp" data-tid="${tp.id}" type="number" min="0" placeholder="0.00" value="${tp.price||''}" />
+        <input class="tp-inp" data-tid="${tp.id}" type="text" inputmode="decimal" placeholder="0.00" value="${tp.price||''}" />
         <span class="tp-unit">USDT</span>
       </div>
       <div class="tp-pct-wrap">
@@ -1039,7 +1049,7 @@ function updateCalcPanel(){
   const cur=calcCurrent(s);
   const {pos,e:amts}=calcAmounts(cur);
   const lev=parseFloat($('fLev')?.value)||0;
-  const prices=fEntries.map((en,i)=>({price:parseFloat(en.price)||0, amount:amts[i]})).filter(e=>e.price>0);
+  const prices=fEntries.map((en,i)=>({price:parseNum(en.price)||0, amount:amts[i]})).filter(e=>e.price>0);
   const panel=$('calcPanel');
   if(!panel) return;
 
@@ -1075,7 +1085,7 @@ function savePos(){
   // Recoger entradas con precios
   const entries=fEntries.map((en,i)=>{
     const inp=document.querySelector(`.ep-inp[data-eid="${en.id}"]`);
-    return {id:uid(), price:parseFloat(inp?.value)||0, amount:amts[i], hit:false};
+    return {id:uid(), price:parseNum(inp?.value)||0, amount:amts[i], hit:false};
   }).filter(e=>e.price>0);
 
   if(!entries.length){ showToast('Añade al menos una entrada con precio','err'); return; }
@@ -1085,11 +1095,11 @@ function savePos(){
   const sl =calcSL(avg, lev, cur, fDir);
 
   // TPs
-  const nFTPs=fTPs.filter(tp=>{const i=document.querySelector(`.tp-inp[data-tid="${tp.id}"]`);return parseFloat(i?.value)>0;}).length;
+  const nFTPs=fTPs.filter(tp=>{const i=document.querySelector(`.tp-inp[data-tid="${tp.id}"]`);return parseNum(i?.value)>0;}).length;
   const tps=fTPs.map(tp=>{
     const inp=document.querySelector(`.tp-inp[data-tid="${tp.id}"]`);
     const pctInp=document.querySelector(`.tp-pct-inp[data-pid="${tp.id}"]`);
-    const price=parseFloat(inp?.value)||0;
+    const price=parseNum(inp?.value)||0;
     if(!price) return null;
     const pct=parseFloat(pctInp?.value)||Math.round(100/nFTPs);
     return {id:uid(), price, pct, hit:false};
