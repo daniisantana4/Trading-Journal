@@ -399,10 +399,7 @@ body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
         <!-- Entradas -->
         <div class="sec" style="margin-top:20px;margin-bottom:8px">Zonas de Entrada</div>
         <div id="fEntries"></div>
-        <button class="btn-add" id="btnAddE" style="padding:9px;margin-bottom:4px">
-          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Añadir entrada (máx. 3)
-        </button>
+        <button class="btn-add" id="btnAddE" style="display:none"></button>
 
         <!-- Panel de cálculo en vivo -->
         <div class="calc-panel" id="calcPanel">
@@ -1041,7 +1038,7 @@ const eNames =['E1','E2','E3'];
 function initForm(){
   editingPosId=null; customSL=null;
   $('savePosLbl').textContent='Guardar Posición';
-  fDir='long'; fEntries=[{id:'e'+(++eCtr),price:''}]; fTPs=[{id:'t'+(++tCtr),price:''}];
+  fDir='long'; fEntries=[{id:'e'+(++eCtr),price:''},{id:'e'+(++eCtr),price:''},{id:'e'+(++eCtr),price:''}]; fTPs=[{id:'t'+(++tCtr),price:''}];
   $('fDirL').classList.add('active'); $('fDirS').classList.remove('active');
   $('fLev').value='';
   document.querySelectorAll('.lev-btn').forEach(b=>b.classList.remove('active'));
@@ -1065,6 +1062,7 @@ function editPos(posId){
   // Entradas y TPs (preservar precios)
   eCtr=0; tCtr=0;
   fEntries=pos.entries.map(e=>({id:'e'+(++eCtr), price:String(e.price)}));
+  while(fEntries.length<3) fEntries.push({id:'e'+(++eCtr),price:''});
   fTPs=pos.tps.map(t=>({id:'t'+(++tCtr), price:String(t.price), pct:t.pct}));
 
   $('savePosLbl').textContent='Actualizar Posición';
@@ -1089,9 +1087,7 @@ function renderFEntries(){
         <input class="ep-inp" data-eid="${en.id}" type="text" inputmode="decimal" placeholder="0.00" value="${en.price||''}" />
         <span class="ep-unit">USDT</span>
       </div>
-      ${i>0?`<button class="ep-del" data-del-e="${en.id}"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`:''}
     </div>`).join('');
-  $('btnAddE').style.display=fEntries.length>=3?'none':'flex';
 }
 
 function renderFTPs(){
@@ -1358,16 +1354,6 @@ $('levBtns').addEventListener('click', e=>{
 });
 $('fLev').addEventListener('input', updateCalcPanel);
 
-$('btnAddE').addEventListener('click', ()=>{
-  if(fEntries.length>=3) return;
-  fEntries.push({id:'e'+(++eCtr),price:''});
-  renderFEntries(); updateCalcPanel();
-});
-$('fEntries').addEventListener('click', e=>{
-  const b=e.target.closest('[data-del-e]'); if(!b) return;
-  fEntries=fEntries.filter(x=>x.id!==b.dataset.delE);
-  renderFEntries(); updateCalcPanel();
-});
 $('fEntries').addEventListener('input', e=>{
   const inp=e.target.closest('.ep-inp'); if(!inp) return;
   const fe=fEntries.find(x=>x.id===inp.dataset.eid);
